@@ -1,0 +1,250 @@
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #f0eee9;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Stop horizontal scrolling on mobile when long words / wide elements would
+     otherwise force the body wider than the viewport. */
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@keyframes nynjwc-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes nynjwc-phone-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes nynjwc-ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-33.333%);
+  }
+}
+
+.scroll-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scroll-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Layout primitives ─────────────────────────────────────────────────── */
+
+/* Section padding — generous on desktop, tight on mobile. */
+.section-pad {
+  padding: 120px 56px;
+}
+.hero-pad {
+  padding: 32px 56px 96px;
+}
+.footer-pad {
+  padding: 100px 56px 40px;
+}
+@media (max-width: 900px) {
+  .section-pad {
+    padding: 72px 24px;
+  }
+  .hero-pad {
+    padding: 20px 24px 88px;
+  }
+  .footer-pad {
+    padding: 64px 24px 28px;
+  }
+}
+
+/* Hero: 2-col on desktop, stacks on mobile. */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 40px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+@media (max-width: 900px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 60px;
+  }
+}
+
+/* Top nav row inside the hero. */
+.hero-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.hero-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+@media (max-width: 700px) {
+  /* On phones, hide the in-page links and only keep the brand mark + CTA. */
+  .hero-nav-links a:not(.cta) {
+    display: none;
+  }
+  .hero-nav-links {
+    gap: 12px;
+  }
+}
+
+/* Feature row: 3-col → 1-col on tablet/phone. */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px;
+}
+@media (max-width: 900px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+/* Country grid: 4-col on desktop, 2-col tablet, 1-col phone. */
+.country-grid-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 64px;
+  align-items: end;
+}
+@media (max-width: 900px) {
+  .country-grid-wrap {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+    align-items: start;
+  }
+  .country-grid-wrap > div:last-child {
+    justify-self: start !important;
+  }
+}
+
+.country-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: #1a1612;
+  border: 1px solid #1a1612;
+}
+@media (max-width: 900px) {
+  .country-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .country-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Countdown: on narrow viewports, drop the label onto its own row above the
+   four number cells so each cell keeps enough room for two-digit values. */
+@media (max-width: 560px) {
+  .countdown {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+  .countdown-label {
+    grid-column: 1 / -1;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(251, 248, 243, 0.18);
+    justify-content: center;
+  }
+}
+
+/* Footer download row: keep on one line on desktop, stack on phone. */
+.footer-cta-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 80px;
+}
+@media (max-width: 700px) {
+  .footer-cta-row {
+    margin-bottom: 56px;
+  }
+  .footer-cta-row > * {
+    width: 100%;
+  }
+  .footer-cta-row form {
+    width: 100%;
+  }
+  .footer-cta-row form input {
+    flex: 1;
+    min-width: 0 !important;
+  }
+}
+
+/* Hero corner stickers ("Try it →" + the press quote) only make sense in the
+   side-by-side desktop layout. Hide them on mobile so they don't overlap the
+   stacked phone preview. */
+.hero-sticker {
+  display: block;
+}
+@media (max-width: 900px) {
+  .hero-sticker {
+    display: none;
+  }
+}
+
+/* AnimatedPhone wrapper — let it shrink to fit narrow viewports. The phone
+   is intrinsically 340px wide; on a 375px iPhone with 24px page padding we
+   only have 327px, so we scale down a touch. */
+.phone-wrap {
+  display: inline-block;
+}
+@media (max-width: 480px) {
+  .phone-wrap {
+    transform: scale(0.78);
+    transform-origin: top center;
+    /* Compensate for the visual gap that scaling introduces below the phone. */
+    margin-bottom: -160px;
+  }
+}
+
+/* Reset for very narrow viewports - don't let inline 56-byte horizontal
+   paddings on hero text break the layout. */
+@media (max-width: 480px) {
+  .hero-headline {
+    font-size: clamp(48px, 14vw, 72px) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
