@@ -1,8 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import posthog from 'posthog-js';
 import { COUNTRIES, COUNTRY_ORDER } from '@/data';
 import type { CountryCode } from '@/types';
 import { FlagStripe, FriendStack } from '@/components/primitives';
 import { AnimatedPhone } from './AnimatedPhone';
+
+// Google Apps Script Web App URL — append rows to a Sheet on POST.
+// Paste the deploy URL from `Deploy → New deployment → Web app` here.
+// Empty string disables the network call (PostHog event still fires).
+const WAITLIST_ENDPOINT = '';
 
 // 2026 World Cup opener: USA vs (TBD) at Estadio Azteca on June 11, 2026.
 // MetLife's first match is shortly after. Pick the universal kickoff date
@@ -148,6 +154,7 @@ function Hero() {
           <a
             href="#download"
             className="cta"
+            onClick={() => posthog.capture('app_store_clicked', { location: 'nav' })}
             style={{
               background: '#1a1612',
               color: '#fbf8f3',
@@ -237,6 +244,7 @@ function Hero() {
         <div style={{ display: 'flex', gap: 12, marginTop: 36, alignItems: 'center', flexWrap: 'wrap' }}>
           <a
             href="#download"
+            onClick={() => posthog.capture('app_store_clicked', { location: 'hero' })}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -264,6 +272,7 @@ function Hero() {
 
           <a
             href="#waitlist"
+            onClick={() => posthog.capture('waitlist_clicked', { location: 'hero' })}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -873,6 +882,34 @@ function Countdown() {
 }
 
 function Footer() {
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleWaitlistSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!/.+@.+\..+/.test(trimmed)) return;
+
+    // PostHog: stitch future events to this person + record the conversion.
+    posthog.identify(trimmed);
+    posthog.capture('waitlist_submitted', { email: trimmed });
+
+    // Google Apps Script POST. text/plain avoids the CORS preflight that
+    // Apps Script Web Apps don't handle; the script parses JSON manually.
+    // Fire-and-forget — PostHog has the email as a backup if this fails.
+    if (WAITLIST_ENDPOINT) {
+      fetch(WAITLIST_ENDPOINT, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ email: trimmed, source: 'marketing-site' }),
+      }).catch(() => {});
+    }
+
+    setSubmitted(true);
+    setEmail('');
+  };
+
   return (
     <footer
       id="download"
@@ -905,6 +942,7 @@ function Footer() {
         <div className="footer-cta-row">
           <a
             href="#"
+            onClick={() => posthog.capture('app_store_clicked', { location: 'footer' })}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -930,49 +968,91 @@ function Footer() {
             </div>
           </a>
 
-          <form
-            id="waitlist"
-            onSubmit={(e) => e.preventDefault()}
-            style={{
-              display: 'flex',
-              gap: 0,
-              alignItems: 'stretch',
-              border: '1px solid rgba(251,248,243,0.4)',
-              borderRadius: 14,
-              overflow: 'hidden',
-            }}
-          >
-            <input
-              type="email"
-              placeholder="you@email.com"
+          {submitted ? (
+            <div
+              id="waitlist"
               style={{
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                padding: '14px 18px',
-                minWidth: 240,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '14px 22px',
+                border: '1px solid rgba(251,248,243,0.4)',
+                borderRadius: 14,
                 fontFamily: '-apple-system, system-ui',
                 fontSize: 14,
                 color: '#fbf8f3',
-              }}
-            />
-            <button
-              type="submit"
-              style={{
-                background: '#fbf8f3',
-                color: '#1a1612',
-                border: 'none',
-                padding: '0 22px',
-                cursor: 'pointer',
-                fontFamily: '-apple-system, system-ui',
-                fontSize: 13,
-                fontWeight: 600,
-                letterSpacing: 0.3,
+                minWidth: 320,
               }}
             >
-              Join waitlist →
-            </button>
-          </form>
+              <span
+                aria-hidden
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  background: '#fbf8f3',
+                  color: '#1a1612',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  flexShrink: 0,
+                }}
+              >
+                ✓
+              </span>
+              <span>You&apos;re in. We&apos;ll let you know when the app drops.</span>
+            </div>
+          ) : (
+            <form
+              id="waitlist"
+              onSubmit={handleWaitlistSubmit}
+              style={{
+                display: 'flex',
+                gap: 0,
+                alignItems: 'stretch',
+                border: '1px solid rgba(251,248,243,0.4)',
+                borderRadius: 14,
+                overflow: 'hidden',
+              }}
+            >
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => posthog.capture('waitlist_input_focused')}
+                placeholder="you@email.com"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  padding: '14px 18px',
+                  minWidth: 240,
+                  fontFamily: '-apple-system, system-ui',
+                  fontSize: 14,
+                  color: '#fbf8f3',
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  background: '#fbf8f3',
+                  color: '#1a1612',
+                  border: 'none',
+                  padding: '0 22px',
+                  cursor: 'pointer',
+                  fontFamily: '-apple-system, system-ui',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  letterSpacing: 0.3,
+                }}
+              >
+                Join waitlist →
+              </button>
+            </form>
+          )}
         </div>
 
         <div
@@ -993,6 +1073,15 @@ function Footer() {
         >
           <span>© 2026 nynjworldcup · Built in the tri-state</span>
           <span style={{ display: 'flex', gap: 24 }}>
+            <a
+              href="https://www.instagram.com/nynjworldcup"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => posthog.capture('instagram_clicked', { location: 'footer' })}
+              style={{ color: '#d6cfc4', textDecoration: 'none' }}
+            >
+              Instagram
+            </a>
             <a href="#" style={{ color: '#d6cfc4', textDecoration: 'none' }}>Privacy</a>
             <a href="#" style={{ color: '#d6cfc4', textDecoration: 'none' }}>Terms</a>
             <a href="#" style={{ color: '#d6cfc4', textDecoration: 'none' }}>Press kit</a>
