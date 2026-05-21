@@ -42,7 +42,10 @@ body,
     transform: translateX(0);
   }
   to {
-    transform: translateX(-33.333%);
+    /* Exactly one of the 3 tiled copies — calc avoids the seam jump that a
+       rounded -33.333% causes. Each item owns its gap via marginRight, so
+       one copy is precisely a third of the track. */
+    transform: translateX(calc(-100% / 3));
   }
 }
 
@@ -115,10 +118,10 @@ body,
   }
 }
 
-/* Feature row: 3-col → 1-col on tablet/phone. */
+/* Feature row: 2x2 on desktop → 1-col on tablet/phone. */
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 48px;
 }
 @media (max-width: 900px) {

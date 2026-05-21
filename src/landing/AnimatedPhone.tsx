@@ -1,54 +1,138 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { IOSDevice } from '@/components/IOSDevice';
+import { IOSDevice } from '~/components/IOSDevice';
 import { TabBar } from '@/components/TabBar';
 import { CountryScreen } from '@/screens/CountryScreen';
+import { EventsScreen } from '@/screens/EventsScreen';
 import { FollowScreen } from '@/screens/FollowScreen';
 import { HomeScreen } from '@/screens/HomeScreen';
-import { MapScreen } from '@/screens/MapScreen';
 import { SavedScreen } from '@/screens/SavedScreen';
-import type { CountryCode, NotificationPrefs, ScreenKey } from '@/types';
+import type { ScreenKey, Variant } from '@/types/domain';
+import * as fx from './fixtures';
+
+// The preview renders the *real* app screen components — no forked copies.
+// `fixtures.ts` supplies static, evergreen data in the app's domain shapes;
+// every callback is a no-op because the preview is display-only (the device
+// wrapper sets `pointer-events: none`).
+
+type PreviewScreen = 'home' | 'country' | 'events' | 'follow' | 'saved';
 
 interface RotationItem {
-  country: CountryCode;
-  screen: ScreenKey;
+  screen: PreviewScreen;
   label: string;
 }
 
-// Curated highlight reel — picks specific (country, screen) pairings that
-// show off each surface of the app at its best.
+// Curated highlight reel — one stop per core surface of the app.
 const ROTATION: RotationItem[] = [
-  { country: 'BRA', screen: 'home', label: "Home · Today's matches" },
-  { country: 'BRA', screen: 'country', label: 'Brazil · Watch parties in Astoria' },
-  { country: 'POR', screen: 'country', label: 'Portugal · The Ironbound' },
-  { country: 'ARG', screen: 'map', label: 'Map · Spots near you' },
-  { country: 'MEX', screen: 'country', label: 'Mexico · Sunset Park & Passaic' },
-  { country: 'POR', screen: 'follow', label: 'Follow · Get pinged on goals' },
-  { country: 'BRA', screen: 'saved', label: 'Saved · Your itinerary' },
+  { screen: 'home', label: 'Today · your teams, live scores' },
+  { screen: 'country', label: 'Portugal · watch parties in the Ironbound' },
+  { screen: 'events', label: 'Events · fan fests, parades & pop-ups' },
+  { screen: 'follow', label: 'Follow · pinged on kickoff & goals' },
+  { screen: 'saved', label: 'Saved · your matchday itinerary' },
 ];
 
-const VARIANT = 'sporty';
+const VARIANT: Variant = 'sporty';
+
+// The device renders at a true iPhone logical width (390px) so every real
+// app screen lays out exactly as it does on a phone, then the whole device
+// is scaled down to DISPLAY_W to fit the marketing layout. Rendering at the
+// narrower display width directly would surface layout bugs that never
+// happen on a real device.
+const LOGICAL_W = 390;
+const LOGICAL_H = 821;
+const DISPLAY_W = 304;
+const SCALE = DISPLAY_W / LOGICAL_W;
+const DISPLAY_H = Math.round(LOGICAL_H * SCALE);
+
+// Display-only preview: nothing here mutates state.
+const noop = () => {};
+
+function renderScreen(screen: PreviewScreen): ReactNode {
+  switch (screen) {
+    case 'home':
+      return (
+        <HomeScreen
+          variant={VARIANT}
+          activeCode="BRA"
+          countriesByCode={fx.countriesByCode}
+          countryOrder={fx.countryOrder}
+          matches={fx.matches}
+          follows={fx.follows}
+          venuesByCountry={fx.venuesByCountry}
+          venuesById={fx.venuesById}
+          going={fx.going}
+          onPickCountry={noop}
+          onPickMatch={noop}
+          onPickWatchParty={noop}
+          onShowSchedule={noop}
+          onShowFollow={noop}
+        />
+      );
+    case 'country': {
+      const country = fx.countriesByCode.POR;
+      if (!country) return null;
+      return (
+        <CountryScreen
+          variant={VARIANT}
+          country={country}
+          venues={fx.venuesByCountry.POR}
+          loadVenuesForCountry={fx.loadVenuesForCountry}
+          going={fx.going}
+          onTogglePlan={noop}
+        />
+      );
+    }
+    case 'events':
+      return (
+        <EventsScreen
+          variant={VARIANT}
+          events={fx.events}
+          eventRsvps={fx.eventRsvps}
+          countriesByCode={fx.countriesByCode}
+          matches={fx.matches}
+          venuesById={fx.venuesById}
+          loadAllVenues={() => Promise.resolve()}
+          onToggleRsvp={noop}
+        />
+      );
+    case 'follow':
+      return (
+        <FollowScreen
+          variant={VARIANT}
+          countries={fx.countryList}
+          wcParticipantCodes={fx.wcParticipantCodes}
+          follows={fx.follows}
+          setFollows={noop}
+          notifPrefs={fx.notifPrefs}
+          setNotifPrefs={noop}
+        />
+      );
+    case 'saved':
+      return (
+        <SavedScreen
+          variant={VARIANT}
+          countriesByCode={fx.countriesByCode}
+          matches={fx.matches}
+          going={fx.going}
+          savedVenues={fx.savedVenues}
+          venuesById={fx.venuesById}
+          events={fx.events}
+          eventRsvps={fx.eventRsvps}
+          loadVenuesForCountry={fx.loadVenuesForCountry}
+          onPickMatch={noop}
+          onPickVenue={noop}
+          onPickEvent={noop}
+          onToggleSave={noop}
+          onToggleRsvp={noop}
+        />
+      );
+    default:
+      return null;
+  }
+}
 
 export function AnimatedPhone() {
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
-
-  // Seed some shared state so Saved looks alive in the rotation.
-  const [going, setGoing] = useState<Record<string, boolean>>({
-    'BRA-0': true,
-    'ARG-2': true,
-    'POR-0': true,
-  });
-  const [follows, setFollows] = useState<Partial<Record<CountryCode, boolean>>>({
-    BRA: true,
-    ARG: true,
-    POR: true,
-  });
-  const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>({
-    matchStart: true,
-    goals: true,
-    newSpots: true,
-    friendsGoing: false,
-  });
 
   useEffect(() => {
     if (paused) return;
@@ -60,51 +144,6 @@ export function AnimatedPhone() {
 
   const cur = ROTATION[idx];
   if (!cur) return null;
-  const stackKey = `${cur.country}-${cur.screen}-${idx}`;
-
-  function renderScreen(country: CountryCode, screen: ScreenKey): ReactNode {
-    const onRsvp = (key: string) =>
-      setGoing((g) => ({ ...g, [key]: !g[key] }));
-    switch (screen) {
-      case 'home':
-        return (
-          <HomeScreen
-            variant={VARIANT}
-            activeCode={country}
-            onPickCountry={() => {}}
-            onPickMatch={() => {}}
-          />
-        );
-      case 'country':
-        return (
-          <CountryScreen
-            variant={VARIANT}
-            activeCode={country}
-            going={going}
-            onRsvp={onRsvp}
-          />
-        );
-      case 'map':
-        return <MapScreen variant={VARIANT} activeCode={country} />;
-      case 'follow':
-        return (
-          <FollowScreen
-            variant={VARIANT}
-            follows={follows}
-            setFollows={setFollows}
-            notifPrefs={notifPrefs}
-            setNotifPrefs={setNotifPrefs}
-          />
-        );
-      case 'saved':
-        return <SavedScreen variant={VARIANT} going={going} />;
-      default:
-        return null;
-    }
-  }
-
-  // Map the visible screen to which tab should be highlighted in the bar.
-  const tabFor = (screen: ScreenKey) => (screen === 'country' ? 'home' : screen);
 
   return (
     <div
@@ -113,33 +152,59 @@ export function AnimatedPhone() {
       onMouseLeave={() => setPaused(false)}
     >
       <div
-        key={stackKey}
-        style={{ animation: 'nynjwc-phone-fade 0.6s cubic-bezier(.2,.8,.2,1)' }}
+        key={cur.screen}
+        style={{
+          width: DISPLAY_W,
+          height: DISPLAY_H,
+          animation: 'nynjwc-phone-fade 0.6s cubic-bezier(.2,.8,.2,1)',
+        }}
       >
-        <IOSDevice width={304} height={640}>
-          {/*
-            Pure visual preview — pointer-events: none disables clicks,
-            scrolls, taps, and selection on every nested screen component
-            and the TabBar. The marketing phone is meant to be watched, not
-            poked. Hover-pause still works (it's on the parent), as do the
-            dot pagination buttons (they live outside this container).
-          */}
+        {/* Logical-size device, scaled down into the DISPLAY_W × DISPLAY_H box. */}
+        <div
+          style={{
+            width: LOGICAL_W,
+            height: LOGICAL_H,
+            transform: `scale(${SCALE})`,
+            transformOrigin: 'top left',
+          }}
+        >
+          <IOSDevice width={LOGICAL_W} height={LOGICAL_H}>
+            {/*
+              Pure visual preview — pointer-events: none disables clicks,
+              scrolls, taps, and selection on every nested screen component
+              and the TabBar. The marketing phone is meant to be watched, not
+              poked. Hover-pause still works (it's on the parent), as do the
+              dot pagination buttons (they live outside this container).
+            */}
           <div
             className="scroll-hide"
             style={{
               position: 'absolute',
-              inset: 0,
+              top: 0,
+              left: 0,
+              right: 0,
+              // Reserve a home-indicator strip at the bottom. A real iPhone
+              // gives the TabBar ~34px of `env(safe-area-inset-bottom)`; in a
+              // browser that env var is 0, so without this the TabBar sits
+              // flush against the phone's rounded corners and clips the
+              // first/last tab labels (Events, Saved).
+              bottom: 34,
               background: '#f7f5f1',
               overflowY: 'hidden',
               overflowX: 'hidden',
               pointerEvents: 'none',
               userSelect: 'none',
+              // The real app TabBar is `position: fixed`. The transform makes
+              // this div a containing block so the TabBar pins to the bottom
+              // of this strip instead of escaping to the page viewport.
+              transform: 'translateZ(0)',
             }}
           >
-            {renderScreen(cur.country, cur.screen)}
-            <TabBar active={tabFor(cur.screen)} />
+            {renderScreen(cur.screen)}
+            <TabBar active={cur.screen as ScreenKey} onChange={noop} />
           </div>
-        </IOSDevice>
+          </IOSDevice>
+        </div>
       </div>
 
       <div
@@ -182,12 +247,12 @@ export function AnimatedPhone() {
           gap: 6,
         }}
       >
-        {ROTATION.map((_, i) => (
+        {ROTATION.map((item, i) => (
           <button
-            key={i}
+            key={item.screen}
             type="button"
             onClick={() => setIdx(i)}
-            aria-label={`Show screen ${i + 1}`}
+            aria-label={`Show ${item.screen} screen`}
             style={{
               width: i === idx ? 18 : 6,
               height: 6,

@@ -1,14 +1,25 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import posthog from 'posthog-js';
-import { COUNTRIES, COUNTRY_ORDER } from '@/data';
-import type { CountryCode } from '@/types';
+import { COUNTRIES, COUNTRY_ORDER } from '~/data';
+import type { CountryCode } from '~/types';
 import { FlagStripe, FriendStack } from '@/components/primitives';
 import { AnimatedPhone } from './AnimatedPhone';
 
-// Google Apps Script Web App URL — append rows to a Sheet on POST.
-// Paste the deploy URL from `Deploy → New deployment → Web app` here.
-// Empty string disables the network call (PostHog event still fires).
-const WAITLIST_ENDPOINT = '';
+// Backend API base, e.g. https://api.nynjwc.com — set via VITE_API_BASE_URL
+// at build time. The waitlist form POSTs to `${API_BASE_URL}/v1/waitlist`.
+// Empty string disables the network call (the PostHog event still fires).
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+
+// Public URL of the beta web app. While the native iOS app is in App Store
+// review, the web app is how people use the product. Set this when the beta
+// is live; until then the "Open the web app" CTAs fall back to the waitlist.
+const BETA_APP_URL = 'https://nynjwc-web.vercel.app';
+
+// Spread onto every beta CTA <a>. External URL opens in a new tab; the
+// empty-URL fallback scrolls to the in-page waitlist.
+const betaLinkProps = BETA_APP_URL
+  ? { href: BETA_APP_URL, target: '_blank' as const, rel: 'noopener noreferrer' }
+  : { href: '#waitlist' };
 
 // 2026 World Cup opener: USA vs (TBD) at Estadio Azteca on June 11, 2026.
 // MetLife's first match is shortly after. Pick the universal kickoff date
@@ -33,25 +44,17 @@ function kickoffEyebrow(): string {
 
 // Marquee ticker iterates over every country we ship — adding a country to
 // COUNTRY_ORDER automatically extends the scroll without a second touchpoint.
-const TICKER_CODES = COUNTRY_ORDER;
-const COUNTRY_GRID: CountryCode[] = [
-  'BRA',
-  'ARG',
-  'POR',
-  'MEX',
-  'COL',
-  'ECU',
-  'FRA',
-  'USA',
-  'KOR',
-  'CRO',
-  'POL',
-  'JPN',
-  'ENG',
-  'SEN',
-  'GER',
-  'MAR',
+// Hand-picked subset for the scrolling ticker — deliberately shorter than
+// the full grid so the marquee reads at a calm pace. The country grid below
+// still renders every country in COUNTRY_ORDER.
+const TICKER_CODES: CountryCode[] = [
+  'BRA', 'ARG', 'POR', 'COL', 'ECU', 'ESP', 'MEX', 'FRA', 'USA', 'GER',
+  'KOR', 'CRO', 'JPN', 'ENG', 'SEN', 'MAR', 'NED', 'NOR', 'BEL', 'URU',
+  'CAN', 'EGY', 'PAR',
 ];
+// The full 2026 World Cup field — curated countries (with venue data) lead,
+// then the rest. Adding a country to COUNTRY_ORDER extends the grid too.
+const COUNTRY_GRID: CountryCode[] = COUNTRY_ORDER;
 
 function CountryTicker() {
   // Repeat 3x so the loop animation tiles cleanly.
@@ -70,16 +73,19 @@ function CountryTicker() {
       <div
         style={{
           display: 'flex',
-          gap: 56,
           alignItems: 'center',
-          animation: 'nynjwc-ticker-scroll 38s linear infinite',
+          // No flex `gap` — each item owns its trailing space via marginRight
+          // so the 3 tiled copies are pixel-identical and the loop seam is
+          // exact. `willChange` keeps the track on its own GPU layer.
+          animation: 'nynjwc-ticker-scroll 55s linear infinite',
           width: 'max-content',
+          willChange: 'transform',
         }}
       >
         {codes.map((c, i) => {
           const co = COUNTRIES[c];
           return (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
               <FlagStripe code={co.code} colors={co.colors} w={36} h={26} radius={3} />
               <span
                 style={{
@@ -87,17 +93,22 @@ function CountryTicker() {
                   fontSize: 32,
                   color: '#1a1612',
                   fontWeight: 400,
+                  marginLeft: 14,
                 }}
               >
                 {co.name}
               </span>
+              {/* Separator star — equal margin each side so it sits centered
+                  in the gap between countries instead of hugging the name.
+                  Its right margin is also the item's trailing space, which
+                  keeps the 3 tiled copies pixel-identical for a clean loop. */}
               <span
                 style={{
                   fontFamily: 'ui-monospace, SF Mono, monospace',
                   fontSize: 11,
                   color: '#8a7f72',
-                  letterSpacing: 1.4,
                   textTransform: 'uppercase',
+                  margin: '0 34px',
                 }}
               >
                 ★
@@ -120,12 +131,17 @@ function Hero() {
       }}
     >
       <div className="hero-nav" style={{ gridColumn: '1 / -1' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <FlagStripe
-            colors={{ primary: '#1a1612', secondary: '#1a1612', tertiary: '#1a1612' }}
-            w={26}
-            h={20}
-            radius={3}
+        <a
+          href="/"
+          aria-label="nynjworldcup home"
+          style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
+        >
+          <img
+            src="/mark.png"
+            alt=""
+            width={28}
+            height={28}
+            style={{ display: 'block', objectFit: 'contain' }}
           />
           <div
             style={{
@@ -138,7 +154,7 @@ function Hero() {
           >
             nynjworldcup
           </div>
-        </div>
+        </a>
         <div
           className="hero-nav-links"
           style={{
@@ -152,9 +168,9 @@ function Hero() {
           <a href="#countries" style={{ color: '#1a1612', textDecoration: 'none' }}>Countries</a>
           <a href="#faq" style={{ color: '#1a1612', textDecoration: 'none' }}>FAQ</a>
           <a
-            href="#download"
+            {...betaLinkProps}
             className="cta"
-            onClick={() => posthog.capture('app_store_clicked', { location: 'nav' })}
+            onClick={() => posthog.capture('beta_clicked', { location: 'nav' })}
             style={{
               background: '#1a1612',
               color: '#fbf8f3',
@@ -166,7 +182,7 @@ function Hero() {
               letterSpacing: 0.3,
             }}
           >
-            Get the app
+            Try the beta
           </a>
         </div>
       </div>
@@ -243,32 +259,63 @@ function Hero() {
 
         <div style={{ display: 'flex', gap: 12, marginTop: 36, alignItems: 'center', flexWrap: 'wrap' }}>
           <a
-            href="#download"
-            onClick={() => posthog.capture('app_store_clicked', { location: 'hero' })}
+            {...betaLinkProps}
+            onClick={() => posthog.capture('beta_clicked', { location: 'hero' })}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 10,
               background: '#1a1612',
               color: '#fbf8f3',
-              padding: '14px 20px 14px 16px',
+              padding: '14px 22px 14px 18px',
               borderRadius: 14,
               textDecoration: 'none',
               fontFamily: '-apple-system, system-ui',
             }}
           >
-            <svg width="22" height="26" viewBox="0 0 22 26" fill="#fbf8f3">
-              <path d="M17.05 13.78c-.03-3.06 2.5-4.53 2.62-4.6-1.43-2.09-3.66-2.38-4.45-2.41-1.89-.19-3.69 1.11-4.65 1.11-.97 0-2.45-1.08-4.03-1.05-2.07.03-3.99 1.21-5.05 3.06-2.16 3.74-.55 9.27 1.55 12.31 1.04 1.49 2.27 3.16 3.88 3.1 1.56-.06 2.15-1.01 4.04-1.01 1.88 0 2.41 1.01 4.05.98 1.67-.03 2.73-1.52 3.76-3.01 1.18-1.73 1.67-3.4 1.7-3.49-.04-.02-3.27-1.25-3.3-4.99zM14.21 5.28c.86-1.05 1.45-2.5 1.29-3.95-1.24.05-2.74.83-3.63 1.87-.79.93-1.5 2.41-1.31 3.83 1.39.11 2.81-.7 3.65-1.75z" />
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#fbf8f3" strokeWidth="1.8">
+              <circle cx="12" cy="12" r="9.2" />
+              <path d="M2.8 12h18.4" strokeLinecap="round" />
+              <path d="M12 2.8c2.7 2.7 2.7 15.7 0 18.4M12 2.8c-2.7 2.7-2.7 15.7 0 18.4" />
             </svg>
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
               <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.7, letterSpacing: 0.3 }}>
-                Download on the
+                No install · free beta
+              </span>
+              <span style={{ fontSize: 18, fontWeight: 600, marginTop: 3, letterSpacing: -0.3 }}>
+                Open the web app
+              </span>
+            </div>
+          </a>
+
+          {/* Non-clickable — the native iOS app is in App Store review. */}
+          <div
+            aria-label="iOS app — coming soon to the App Store"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 10,
+              background: 'transparent',
+              color: '#8a7f72',
+              padding: '14px 20px 14px 16px',
+              borderRadius: 14,
+              border: '1px solid #d8d1c5',
+              fontFamily: '-apple-system, system-ui',
+              cursor: 'default',
+            }}
+          >
+            <svg width="20" height="24" viewBox="0 0 22 26" fill="#a89f90">
+              <path d="M17.05 13.78c-.03-3.06 2.5-4.53 2.62-4.6-1.43-2.09-3.66-2.38-4.45-2.41-1.89-.19-3.69 1.11-4.65 1.11-.97 0-2.45-1.08-4.03-1.05-2.07.03-3.99 1.21-5.05 3.06-2.16 3.74-.55 9.27 1.55 12.31 1.04 1.49 2.27 3.16 3.88 3.1 1.56-.06 2.15-1.01 4.04-1.01 1.88 0 2.41 1.01 4.05.98 1.67-.03 2.73-1.52 3.76-3.01 1.18-1.73 1.67-3.4 1.7-3.49-.04-.02-3.27-1.25-3.3-4.99zM14.21 5.28c.86-1.05 1.45-2.5 1.29-3.95-1.24.05-2.74.83-3.63 1.87-.79.93-1.5 2.41-1.31 3.83 1.39.11 2.81-.7 3.65-1.75z" />
+            </svg>
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>
+                Coming soon
               </span>
               <span style={{ fontSize: 18, fontWeight: 600, marginTop: 3, letterSpacing: -0.3 }}>
                 App Store
               </span>
             </div>
-          </a>
+          </div>
 
           <a
             href="#waitlist"
@@ -321,7 +368,7 @@ function Hero() {
               lineHeight: 1.4,
             }}
           >
-            <div style={{ fontWeight: 600, color: '#1a1612' }}>16 countries · NY/NJ</div>
+            <div style={{ fontWeight: 600, color: '#1a1612' }}>All 48 World Cup teams · NY/NJ</div>
             <div style={{ marginTop: 2 }}>Find where your country is actually watching.</div>
           </div>
         </div>
@@ -405,7 +452,7 @@ function Hero() {
               textTransform: 'uppercase',
             }}
           >
-            16 countries · NY/NJ
+            All 48 teams · NY/NJ
           </div>
         </div>
 
@@ -423,19 +470,25 @@ function FeatureRow() {
       kicker: '01',
       title: 'Watch parties, mapped.',
       body:
-        'Every diaspora-packed bar from Astoria to the Ironbound, pinned by flag on a real neighborhood map. Tap a pin to see the venue, the hood, and how to get there.',
+        'Every diaspora-packed bar from Astoria to the Ironbound, pinned by flag on a real neighborhood map. Tap a pin for the venue, the hood, and how to get there.',
     },
     {
       kicker: '02',
-      title: "Today's matches at a glance.",
+      title: 'Your teams, up top.',
       body:
-        "Live scores, kickoff times, who's playing where — one screen, one scroll. Pick a country and the schedule scopes to that team.",
+        "Follow your countries and the home screen leads with their fixtures — live scores, kickoff times, who's playing where. The full bracket, group stage to final, is one tap away.",
     },
     {
       kicker: '03',
-      title: 'RSVP, then walk in.',
+      title: 'Pick your spot. Keep your plan.',
       body:
-        "Tap a venue and it lands in your Saved itinerary. Show up. No reservations, no fees, no minimums — it's still just a bar.",
+        "Find your bar, mark it for the match, and it lands in Saved — your matchday itinerary. Share it as a poster to the group chat. No reservations, no fees, no minimums — it's still just a bar.",
+    },
+    {
+      kicker: '04',
+      title: 'More than the match.',
+      body:
+        "Fan fests, food pop-ups, parades, after-parties — the whole neighborhood's matchday lineup. See who's going and bring the crew.",
     },
   ];
 
@@ -474,9 +527,9 @@ function FeatureRow() {
             fontWeight: 400,
           }}
         >
-          Three things, done well.
+          Everything matchday needs.
           <br />
-          <span style={{ fontStyle: 'italic', color: '#5a4a3c' }}>That&apos;s the whole app.</span>
+          <span style={{ fontStyle: 'italic', color: '#5a4a3c' }}>Nothing it doesn&apos;t.</span>
         </h2>
 
         <div className="feature-grid">
@@ -541,7 +594,7 @@ function CountriesSection() {
                 marginBottom: 18,
               }}
             >
-              ✦ {COUNTRY_GRID.length} countries to start
+              ✦ All {COUNTRY_GRID.length} World Cup teams
             </div>
             <h2
               style={{
@@ -569,14 +622,33 @@ function CountriesSection() {
               justifySelf: 'end',
             }}
           >
-            We&apos;re starting with the {COUNTRY_GRID.length} countries with the loudest diasporas in NY/NJ. More
-            on the way — vote in-app for who&apos;s next.
+            Every nation in the 2026 field — all {COUNTRY_GRID.length}. Venue coverage runs deepest in
+            the loudest NY/NJ diaspora hubs and grows every week as fans add their spots.
           </div>
         </div>
 
         <div className="country-grid">
           {COUNTRY_GRID.map((c) => {
             const co = COUNTRIES[c];
+            const hasVenues = co.venues.length > 0;
+            // Venue-less countries still get a useful card: a known
+            // neighborhood instead of a tagline, scouting status instead
+            // of a spot count.
+            const desc =
+              co.tagline ||
+              (co.neighborhoods.length
+                ? co.neighborhoods.slice(0, 2).join(' · ')
+                : 'Watch parties coming soon');
+            const stat = hasVenues
+              ? `${co.venues.length} spots · ${co.venues.reduce(
+                  (s, v) => s + v.rsvps,
+                  0,
+                )} going`
+              : co.neighborhoods.length
+                ? `${co.neighborhoods.length} neighborhood${
+                    co.neighborhoods.length === 1 ? '' : 's'
+                  } scouted`
+                : 'On the map soon';
             return (
               <div
                 key={c}
@@ -611,20 +683,19 @@ function CountriesSection() {
                     flex: 1,
                   }}
                 >
-                  {co.tagline}
+                  {desc}
                 </div>
                 <div
                   style={{
                     fontFamily: 'ui-monospace, SF Mono, monospace',
                     fontSize: 10,
-                    color: '#8a7f72',
+                    color: hasVenues ? '#8a7f72' : '#aaa099',
                     letterSpacing: 1.2,
                     textTransform: 'uppercase',
                     marginTop: 6,
                   }}
                 >
-                  {co.venues.length} spots ·{' '}
-                  {co.venues.reduce((s, v) => s + v.rsvps, 0)} going
+                  {stat}
                 </div>
               </div>
             );
@@ -714,11 +785,11 @@ function FAQ() {
     },
     {
       q: 'How does the Instagram thing work?',
-      a: "Optional. If you connect Instagram, we surface mutuals who've RSVPed to the same spots. You can also just use the app solo — most people do, at first.",
+      a: "Optional. If you connect Instagram, we surface mutuals who are heading to the same spots. You can also just use the app solo — most people do, at first.",
     },
     {
-      q: 'Is this an iOS-only thing?',
-      a: 'For now. Android is on the roadmap for after the group stage.',
+      q: 'Web app or native app?',
+      a: "Right now it's a beta web app — open it in any browser on your phone or laptop, nothing to install. The native iOS app is in App Store review and will follow shortly; Android comes after that.",
     },
   ];
 
@@ -894,14 +965,12 @@ function Footer() {
     posthog.identify(trimmed);
     posthog.capture('waitlist_submitted', { email: trimmed });
 
-    // Google Apps Script POST. text/plain avoids the CORS preflight that
-    // Apps Script Web Apps don't handle; the script parses JSON manually.
-    // Fire-and-forget — PostHog has the email as a backup if this fails.
-    if (WAITLIST_ENDPOINT) {
-      fetch(WAITLIST_ENDPOINT, {
+    // Persist to the backend waitlist table. Fire-and-forget — PostHog has
+    // the email as a backup if this fails, and the UI confirms optimistically.
+    if (API_BASE_URL) {
+      fetch(`${API_BASE_URL}/v1/waitlist`, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: trimmed, source: 'marketing-site' }),
       }).catch(() => {});
     }
@@ -941,32 +1010,63 @@ function Footer() {
 
         <div className="footer-cta-row">
           <a
-            href="#"
-            onClick={() => posthog.capture('app_store_clicked', { location: 'footer' })}
+            {...betaLinkProps}
+            onClick={() => posthog.capture('beta_clicked', { location: 'footer' })}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 10,
               background: '#fbf8f3',
               color: '#1a1612',
-              padding: '14px 22px 14px 16px',
+              padding: '14px 22px 14px 18px',
               borderRadius: 14,
               textDecoration: 'none',
               fontFamily: '-apple-system, system-ui',
             }}
           >
-            <svg width="22" height="26" viewBox="0 0 22 26" fill="#1a1612">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#1a1612" strokeWidth="1.8">
+              <circle cx="12" cy="12" r="9.2" />
+              <path d="M2.8 12h18.4" strokeLinecap="round" />
+              <path d="M12 2.8c2.7 2.7 2.7 15.7 0 18.4M12 2.8c-2.7 2.7-2.7 15.7 0 18.4" />
+            </svg>
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+              <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.6, letterSpacing: 0.3 }}>
+                No install · free beta
+              </span>
+              <span style={{ fontSize: 18, fontWeight: 600, marginTop: 3, letterSpacing: -0.3 }}>
+                Open the web app
+              </span>
+            </div>
+          </a>
+
+          {/* Non-clickable — the native iOS app is in App Store review. */}
+          <div
+            aria-label="iOS app — coming soon to the App Store"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 10,
+              background: 'transparent',
+              color: 'rgba(251,248,243,0.55)',
+              padding: '14px 20px 14px 16px',
+              borderRadius: 14,
+              border: '1px solid rgba(251,248,243,0.28)',
+              fontFamily: '-apple-system, system-ui',
+              cursor: 'default',
+            }}
+          >
+            <svg width="20" height="24" viewBox="0 0 22 26" fill="rgba(251,248,243,0.45)">
               <path d="M17.05 13.78c-.03-3.06 2.5-4.53 2.62-4.6-1.43-2.09-3.66-2.38-4.45-2.41-1.89-.19-3.69 1.11-4.65 1.11-.97 0-2.45-1.08-4.03-1.05-2.07.03-3.99 1.21-5.05 3.06-2.16 3.74-.55 9.27 1.55 12.31 1.04 1.49 2.27 3.16 3.88 3.1 1.56-.06 2.15-1.01 4.04-1.01 1.88 0 2.41 1.01 4.05.98 1.67-.03 2.73-1.52 3.76-3.01 1.18-1.73 1.67-3.4 1.7-3.49-.04-.02-3.27-1.25-3.3-4.99zM14.21 5.28c.86-1.05 1.45-2.5 1.29-3.95-1.24.05-2.74.83-3.63 1.87-.79.93-1.5 2.41-1.31 3.83 1.39.11 2.81-.7 3.65-1.75z" />
             </svg>
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-              <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.7, letterSpacing: 0.3 }}>
-                Download on the
+              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>
+                Coming soon
               </span>
               <span style={{ fontSize: 18, fontWeight: 600, marginTop: 3, letterSpacing: -0.3 }}>
                 App Store
               </span>
             </div>
-          </a>
+          </div>
 
           {submitted ? (
             <div
@@ -1002,7 +1102,7 @@ function Footer() {
               >
                 ✓
               </span>
-              <span>You&apos;re in. We&apos;ll let you know when the app drops.</span>
+              <span>You&apos;re in. We&apos;ll email you the moment the iOS app lands.</span>
             </div>
           ) : (
             <form

@@ -1,20 +1,62 @@
+// Types for the marketing site's own landing-page content — the country
+// ticker and the country grid in src/data.ts.
+//
+// The phone preview does NOT use these: it renders the real app screens,
+// which carry the full app domain model from `@/types/domain`. See
+// src/landing/fixtures.ts.
+
+// All 48 nations in the 2026 World Cup field. Must stay a subset of the
+// app's `CountryCode` (@/types/domain) so country data flows into the real
+// preview components.
 export type CountryCode =
-  | 'USA'
   | 'BRA'
-  | 'FRA'
   | 'ARG'
   | 'POR'
+  | 'COL'
   | 'ECU'
   | 'MEX'
-  | 'COL'
+  | 'FRA'
+  | 'USA'
   | 'KOR'
   | 'CRO'
-  | 'POL'
   | 'JPN'
   | 'ENG'
   | 'SEN'
   | 'GER'
-  | 'MAR';
+  | 'MAR'
+  | 'ESP'
+  | 'NED'
+  | 'NOR'
+  | 'BEL'
+  | 'SUI'
+  | 'URU'
+  | 'TUR'
+  | 'SWE'
+  | 'AUT'
+  | 'SCO'
+  | 'CAN'
+  | 'CZE'
+  | 'CIV'
+  | 'GHA'
+  | 'EGY'
+  | 'PAR'
+  | 'ALG'
+  | 'BIH'
+  | 'AUS'
+  | 'TUN'
+  | 'IRN'
+  | 'COD'
+  | 'RSA'
+  | 'CPV'
+  | 'KSA'
+  | 'PAN'
+  | 'UZB'
+  | 'QAT'
+  | 'NZL'
+  | 'IRQ'
+  | 'HAI'
+  | 'CUW'
+  | 'JOR';
 
 export interface FlagPalette {
   primary: string;
@@ -42,32 +84,4 @@ export interface Country {
   tagline: string;
   neighborhoods: string[];
   venues: Venue[];
-}
-
-export interface Match {
-  id: string;
-  home: CountryCode;
-  away: CountryCode;
-  time: string;
-  stage: string;
-  stadium: string;
-  live: boolean;
-  minute?: number;
-  score?: string;
-}
-
-export interface Friend {
-  name: string;
-  tint: string;
-}
-
-export type Variant = 'editorial' | 'minimal' | 'sporty';
-
-export type ScreenKey = 'home' | 'country' | 'map' | 'follow' | 'saved';
-
-export interface NotificationPrefs {
-  matchStart: boolean;
-  goals: boolean;
-  newSpots: boolean;
-  friendsGoing: boolean;
 }

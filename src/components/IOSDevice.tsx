@@ -101,10 +101,17 @@ export function IOSDevice({
           zIndex: 50,
         }}
       />
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
-        <IOSStatusBar dark={dark} />
-      </div>
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/*
+          The status bar takes flow space (not an absolute overlay) so the
+          screen content starts *below* it. The real app screens assume the
+          native shell insets the WebView below the status bar — they carry
+          no safe-area top padding — so an overlay would collide with their
+          headers. The Dynamic Island still overlays (it's a notch).
+        */}
+        <div style={{ flexShrink: 0, zIndex: 10, background: dark ? '#000' : '#f7f5f1' }}>
+          <IOSStatusBar dark={dark} />
+        </div>
         <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>{children}</div>
       </div>
       <div

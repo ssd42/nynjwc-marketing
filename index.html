@@ -4,13 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
-    <meta name="description" content="nynjworldcup — find your country's home this World Cup. Every match, every diaspora-packed bar from Astoria to the Ironbound." />
+    <title>World Cup 2026 Watch Parties in NYC &amp; NJ | nynjworldcup</title>
+    <meta
+      name="description"
+      content="Find your country's 2026 FIFA World Cup watch party across NYC &amp; NJ — every match, every diaspora bar from Astoria to the Ironbound, all 48 nations. Free."
+    />
+    <link rel="canonical" href="https://nynjworldcup.com/" />
     <meta name="theme-color" content="#f0eee9" />
 
     <!-- Open Graph / social -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="nynjworldcup — find your country's home this World Cup" />
-    <meta property="og:description" content="Every World Cup match, every diaspora-packed bar from Astoria to the Ironbound." />
+    <meta property="og:site_name" content="nynjworldcup" />
+    <meta property="og:url" content="https://nynjworldcup.com/" />
+    <meta property="og:title" content="nynjworldcup — World Cup 2026 watch parties in NYC &amp; NJ" />
+    <meta property="og:description" content="Every World Cup match, every diaspora-packed bar from Astoria to the Ironbound — all 48 nations." />
+    <meta property="og:image" content="https://nynjworldcup.com/og-image.png" />
+    <meta property="og:image:alt" content="nynjworldcup — find your country's home this World Cup" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="nynjworldcup — World Cup 2026 watch parties in NYC &amp; NJ" />
+    <meta name="twitter:description" content="Every World Cup match, every diaspora-packed bar from Astoria to the Ironbound — all 48 nations." />
+    <meta name="twitter:image" content="https://nynjworldcup.com/og-image.png" />
+    <meta name="twitter:image:alt" content="nynjworldcup — find your country's home this World Cup" />
+
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -19,7 +36,79 @@
       rel="stylesheet"
     />
 
-    <title>nynjworldcup — find your country's home this World Cup</title>
+    <!-- Structured data: Organization, WebSite, SoftwareApplication, FAQ.
+         Answer text mirrors the on-page FAQ exactly (a Google requirement). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://nynjworldcup.com/#organization",
+            "name": "nynjworldcup",
+            "url": "https://nynjworldcup.com/",
+            "logo": "https://nynjworldcup.com/logo.png",
+            "sameAs": ["https://www.instagram.com/nynjworldcup"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://nynjworldcup.com/#website",
+            "url": "https://nynjworldcup.com/",
+            "name": "nynjworldcup",
+            "description": "Find 2026 FIFA World Cup watch parties across the NYC and NJ metro, organized by country and diaspora neighborhood.",
+            "publisher": { "@id": "https://nynjworldcup.com/#organization" }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "nynjworldcup",
+            "url": "https://nynjworldcup.com/",
+            "applicationCategory": "LifestyleApplication",
+            "operatingSystem": "Web, iOS",
+            "description": "nynjworldcup helps fans find 2026 FIFA World Cup watch parties at diaspora bars and venues across New York City and New Jersey, for all 48 participating nations.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "publisher": { "@id": "https://nynjworldcup.com/#organization" }
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://nynjworldcup.com/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Do bars pay to be listed?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. We crawl public listings, social media, and on-the-ground reports from local fans. Bars can claim their listing for free — paid promotion is clearly labeled."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Why only NY/NJ?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "The 2026 World Cup hosts 8 matches at MetLife Stadium, but more importantly: the tri-state has the deepest roster of country-specific neighborhoods in the country. We're going deep before going wide."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How does the Instagram thing work?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Optional. If you connect Instagram, we surface mutuals who are heading to the same spots. You can also just use the app solo — most people do, at first."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Web app or native app?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Right now it's a beta web app — open it in any browser on your phone or laptop, nothing to install. The native iOS app is in App Store review and will follow shortly; Android comes after that."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

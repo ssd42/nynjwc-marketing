@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import posthog from 'posthog-js';
-import { LandingPage } from '@/landing/LandingPage';
+import { LandingPage } from '~/landing/LandingPage';
 import './styles.css';
 
 posthog.init('phc_CQ9UJEmmzhe586scbjKrxUtRD3yy8obAhiYdtwZZtkFA', {

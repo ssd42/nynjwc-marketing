@@ -1,0 +1,25 @@
+# nynjworldcup
+
+> nynjworldcup helps fans find 2026 FIFA World Cup watch parties across the
+> New York City and New Jersey metro area, organized by country and diaspora
+> neighborhood.
+
+nynjworldcup is a free app for the 2026 FIFA World Cup (June 11 – July 19,
+2026). It maps watch parties at diaspora bars and venues across NYC and NJ
+for all 48 participating nations — for example, Brazil supporters in Astoria,
+Queens or Portugal supporters in the Ironbound, Newark. Fans follow their
+teams, see every match in the schedule, find a bar near them, and save a
+matchday plan.
+
+It is currently a beta web app; a native iOS app is in App Store review.
+
+## Key facts
+- Focus: 2026 FIFA World Cup watch parties in the NYC + NJ metro area
+- Coverage: all 48 nations in the 2026 World Cup
+- Organized by: country and diaspora neighborhood (e.g. Astoria, the Ironbound, Jackson Heights)
+- Platform: beta web app now; native iOS app coming soon to the App Store
+- Price: free
+
+## Links
+- Website: https://nynjworldcup.com/
+- Instagram: https://www.instagram.com/nynjworldcup

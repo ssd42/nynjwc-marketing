@@ -17,8 +17,23 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "types": ["vite/client", "node"],
     "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] }
+    "paths": {
+      "@/*": ["../nynjwc-frontend/src/*"],
+      "~/*": ["src/*"]
+    }
   },
-  "include": ["src", "vite.config.ts"]
+  "//": "App screens are typechecked transitively via the import graph — do not add the app src to `include` or tsc will pull in MapLibre/Capacitor files the marketing site never bundles.",
+  "include": ["src", "vite.config.ts"],
+  "//exclude": "These are superseded fork files, kept only until the next cleanup commit deletes them. They import the old marketing copies and would not typecheck under the new alias scheme.",
+  "exclude": [
+    "src/screens",
+    "src/components/MockAd.tsx",
+    "src/components/TabBar.tsx",
+    "src/components/primitives.tsx"
+  ]
 }
