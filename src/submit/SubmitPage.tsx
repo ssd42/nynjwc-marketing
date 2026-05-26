@@ -19,6 +19,15 @@ type Session = { label: string; role: Role };
 
 type Country = { code: string; name: string; flagEmoji: string };
 type Venue = { id: string; name: string; hood: string };
+type Match = {
+  id: string;
+  homeCode: string | null;
+  awayCode: string | null;
+  homeLabel: string | null;
+  awayLabel: string | null;
+  kickoffAt: string;
+  stage: string;
+};
 
 type PendingEvent = {
   id: string;
@@ -221,6 +230,7 @@ function AddEventForm({ code }: { code: string }) {
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [countryCode, setCountryCode] = useState('');
+  const [matchId, setMatchId] = useState('');
   const [venueId, setVenueId] = useState('');
   const [freeText, setFreeText] = useState(false);
   const [venueName, setVenueName] = useState('');
@@ -232,6 +242,7 @@ function AddEventForm({ code }: { code: string }) {
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [doneId, setDoneId] = useState('');
@@ -240,6 +251,9 @@ function AddEventForm({ code }: { code: string }) {
     api<Country[]>('/v1/countries', code)
       .then(setCountries)
       .catch(() => setError('Could not load the country list.'));
+    api<Match[]>('/v1/matches', code)
+      .then(setMatches)
+      .catch(() => setMatches([]));
   }, [code]);
 
   useEffect(() => {
@@ -257,6 +271,7 @@ function AddEventForm({ code }: { code: string }) {
     setTitle('');
     setStartsAt('');
     setEndsAt('');
+    setMatchId('');
     setVenueId('');
     setVenueName('');
     setVenueHood('');
@@ -324,6 +339,7 @@ function AddEventForm({ code }: { code: string }) {
     } else {
       payload.venueId = venueId;
     }
+    if (matchId) payload.matchId = matchId;
     if (imageUrl) payload.imageUrl = imageUrl;
     if (sourceUrl.trim()) payload.sourceUrl = sourceUrl.trim();
 
@@ -406,7 +422,7 @@ function AddEventForm({ code }: { code: string }) {
       />
 
       <label style={s.label} htmlFor="country">
-        Country <span style={{ color: COLORS.muted, fontWeight: 400 }}>(optional)</span>
+        Country <span style={{ color: COLORS.muted, fontWeight: 400 }}>(host / venue affiliation)</span>
       </label>
       <select
         id="country"
@@ -420,6 +436,35 @@ function AddEventForm({ code }: { code: string }) {
             {c.flagEmoji} {c.name}
           </option>
         ))}
+      </select>
+
+      <label style={s.label} htmlFor="match">
+        Match <span style={{ color: COLORS.muted, fontWeight: 400 }}>(links event to both teams)</span>
+      </label>
+      <select
+        id="match"
+        style={s.input}
+        value={matchId}
+        onChange={(e) => setMatchId(e.target.value)}
+      >
+        <option value="">— none (generic event) —</option>
+        {[...matches]
+          .sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt))
+          .map((m) => {
+            const date = new Date(m.kickoffAt).toLocaleString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+            });
+            const home = m.homeCode ?? m.homeLabel ?? '?';
+            const away = m.awayCode ?? m.awayLabel ?? '?';
+            return (
+              <option key={m.id} value={m.id}>
+                {date} · {home} vs {away}
+              </option>
+            );
+          })}
       </select>
 
       <div style={s.rowCheck}>
