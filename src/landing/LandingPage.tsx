@@ -13,7 +13,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 // Public URL of the beta web app. While the native iOS app is in App Store
 // review, the web app is how people use the product. Set this when the beta
 // is live; until then the "Open the web app" CTAs fall back to the waitlist.
-const BETA_APP_URL = 'https://nynjwc-web.vercel.app';
+const BETA_APP_URL = 'https://app.nynjworldcup.com';
 
 // Spread onto every beta CTA <a>. External URL opens in a new tab; the
 // empty-URL fallback scrolls to the in-page waitlist.
