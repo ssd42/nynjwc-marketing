@@ -3,5 +3,7 @@
 # PerplexityBot, Google-Extended) — discovery is the goal.
 User-agent: *
 Allow: /
+# Unadvertised internal event-entry tool — keep it out of every index.
+Disallow: /submit.html
 
 Sitemap: https://nynjworldcup.com/sitemap.xml

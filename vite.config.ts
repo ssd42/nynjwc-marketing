@@ -29,5 +29,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    // Two entry points: the public landing page and the unadvertised
+    // event-entry tool. `submit.html` builds to `dist/submit.html` — the
+    // prerender step (scripts/prerender.mjs) only rewrites index.html, so
+    // the submit page ships as a plain client-rendered SPA, untouched.
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        submit: path.resolve(__dirname, 'submit.html'),
+      },
+    },
   },
 });
