@@ -660,17 +660,39 @@ function ReviewQueue({ code }: { code: string }) {
           }}
         >
           {ev.imageUrl && (
-            <img
-              src={ev.imageUrl}
-              alt=""
-              style={{
-                width: 72,
-                height: 96,
-                objectFit: 'cover',
-                borderRadius: 6,
-                flexShrink: 0,
-              }}
-            />
+            ev.sourceUrl ? (
+              <a
+                href={ev.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                title="Open original post"
+                style={{ flexShrink: 0, lineHeight: 0 }}
+              >
+                <img
+                  src={ev.imageUrl}
+                  alt=""
+                  style={{
+                    width: 72,
+                    height: 96,
+                    objectFit: 'cover',
+                    borderRadius: 6,
+                    cursor: 'zoom-in',
+                  }}
+                />
+              </a>
+            ) : (
+              <img
+                src={ev.imageUrl}
+                alt=""
+                style={{
+                  width: 72,
+                  height: 96,
+                  objectFit: 'cover',
+                  borderRadius: 6,
+                  flexShrink: 0,
+                }}
+              />
+            )
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 14 }}>{ev.title}</div>
@@ -683,11 +705,27 @@ function ReviewQueue({ code }: { code: string }) {
               {ev.submittedBy ? ` · submitted by ${ev.submittedBy}` : ''}
             </div>
             {ev.sourceUrl && (
-              <div style={{ fontSize: 12, marginTop: 4 }}>
-                <a href={ev.sourceUrl} target="_blank" rel="noreferrer" style={{ color: COLORS.ink }}>
-                  View source ↗
-                </a>
-              </div>
+              <a
+                href={ev.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  marginTop: 8,
+                  padding: '6px 12px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: COLORS.ink,
+                  background: '#fff',
+                  border: `1px solid ${COLORS.line}`,
+                  borderRadius: 999,
+                  textDecoration: 'none',
+                }}
+              >
+                📸 See the original post
+              </a>
             )}
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
               <button
