@@ -48,6 +48,13 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - run: npm ci
+
+      # The marketing build typechecks files imported from ../nynjwc-frontend
+      # (via the @/ alias), so their dependencies (react, etc.) need to be
+      # installed in the sibling's node_modules.
+      - name: Install frontend deps
+        working-directory: ${{ runner.workspace }}/nynjwc-frontend
+        run: npm ci --no-audit --no-fund
       # Headless Chromium for the prerender step inside `npm run build`.
       - run: npx playwright install --with-deps chromium
       - run: npm run build
