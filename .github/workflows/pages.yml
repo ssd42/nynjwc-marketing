@@ -24,6 +24,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The phone preview imports the real app screens via the @/ alias,
+      # which resolves to ../nynjwc-frontend/src (sibling on local disk).
+      # CI doesn't have that sibling, so we sparse-checkout it from the
+      # monorepo and drop it one level above the workspace.
+      - name: Check out frontend from monorepo
+        uses: actions/checkout@v4
+        with:
+          repository: ssd42/nynjwc
+          token: ${{ secrets.MONOREPO_PAT }}
+          path: __monorepo
+          sparse-checkout: nynjwc-frontend
+
+      - name: Place frontend as sibling
+        run: |
+          mv __monorepo/nynjwc-frontend "$RUNNER_WORKSPACE/nynjwc-frontend"
+          rm -rf __monorepo
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
