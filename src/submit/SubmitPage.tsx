@@ -238,6 +238,7 @@ function AddEventForm({ code }: { code: string }) {
   const [isFree, setIsFree] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
+  const [venueMapUrl, setVenueMapUrl] = useState('');
   const [uploading, setUploading] = useState(false);
 
   const [countries, setCountries] = useState<Country[]>([]);
@@ -278,6 +279,7 @@ function AddEventForm({ code }: { code: string }) {
     setIsFree(false);
     setImageUrl('');
     setSourceUrl('');
+    setVenueMapUrl('');
     setDoneId('');
   };
 
@@ -342,6 +344,9 @@ function AddEventForm({ code }: { code: string }) {
     if (matchId) payload.matchId = matchId;
     if (imageUrl) payload.imageUrl = imageUrl;
     if (sourceUrl.trim()) payload.sourceUrl = sourceUrl.trim();
+    // Map URL only meaningful for free-text venues — known venues
+    // already carry their own google_maps_url on the venue record.
+    if (freeText && venueMapUrl.trim()) payload.venueMapUrl = venueMapUrl.trim();
 
     setBusy(true);
     try {
@@ -496,6 +501,17 @@ function AddEventForm({ code }: { code: string }) {
             style={s.input}
             value={venueHood}
             onChange={(e) => setVenueHood(e.target.value)}
+          />
+          <label style={s.label} htmlFor="venueMapUrl">
+            Google Maps URL <span style={{ color: COLORS.muted, fontWeight: 400 }}>(optional)</span>
+          </label>
+          <input
+            id="venueMapUrl"
+            style={s.input}
+            type="url"
+            placeholder="https://maps.google.com/?q=…"
+            value={venueMapUrl}
+            onChange={(e) => setVenueMapUrl(e.target.value)}
           />
         </>
       ) : (
@@ -724,7 +740,7 @@ function ReviewQueue({ code }: { code: string }) {
                   textDecoration: 'none',
                 }}
               >
-                📸 See the original post
+                See the original post ↗
               </a>
             )}
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
