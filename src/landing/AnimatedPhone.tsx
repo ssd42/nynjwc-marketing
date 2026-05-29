@@ -88,6 +88,7 @@ function renderScreen(screen: PreviewScreen): ReactNode {
           events={fx.events}
           eventRsvps={fx.eventRsvps}
           countriesByCode={fx.countriesByCode}
+          follows={fx.follows}
           matches={fx.matches}
           venuesById={fx.venuesById}
           loadAllVenues={() => Promise.resolve()}
