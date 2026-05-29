@@ -29,14 +29,16 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    // Two entry points: the public landing page and the unadvertised
-    // event-entry tool. `submit.html` builds to `dist/submit.html` — the
-    // prerender step (scripts/prerender.mjs) only rewrites index.html, so
-    // the submit page ships as a plain client-rendered SPA, untouched.
+    // Three entry points: the public landing page, the unadvertised
+    // event-entry tool, and the privacy policy (linked from Play Store /
+    // App Store listings). `submit.html` and `privacy.html` build as plain
+    // static pages — prerender (scripts/prerender.mjs) only rewrites
+    // index.html, so they ship as-authored.
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
         submit: path.resolve(__dirname, 'submit.html'),
+        privacy: path.resolve(__dirname, 'privacy.html'),
       },
     },
   },

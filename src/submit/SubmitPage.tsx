@@ -158,7 +158,62 @@ const s = {
   } as CSSProperties,
   tabRow: { display: 'flex', gap: 8, marginBottom: 16 } as CSSProperties,
   rowCheck: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontSize: 14 } as CSSProperties,
+  pre: {
+    background: '#f7f5f0',
+    border: `1px solid ${COLORS.line}`,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 12,
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    overflow: 'auto',
+    margin: 0,
+    whiteSpace: 'pre',
+  } as CSSProperties,
+  notes: {
+    fontSize: 12,
+    color: COLORS.muted,
+    margin: '10px 0 0',
+    paddingLeft: 18,
+  } as CSSProperties,
+  textarea: {
+    width: '100%',
+    padding: '9px 11px',
+    fontSize: 13,
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    border: `1px solid ${COLORS.line}`,
+    borderRadius: 8,
+    boxSizing: 'border-box',
+    background: '#fff',
+    color: COLORS.ink,
+    minHeight: 220,
+    resize: 'vertical',
+  } as CSSProperties,
 };
+
+const JSON_TEMPLATE = `{
+  "kind": "watch",
+  "title": "Brazil vs Argentina watch party",
+  "startsAt": "2026-06-14T19:00:00-04:00",
+  "endsAt": "2026-06-14T23:00:00-04:00",
+  "countryCode": "BRA",
+  "venueName": "Bar Yono",
+  "venueHood": "Astoria",
+  "venueMapUrl": "https://maps.google.com/?q=...",
+  "sourceUrl": "https://www.instagram.com/p/...",
+  "isFree": false
+}`;
+
+const JSON_FIELD_NOTES: string[] = [
+  'kind: one of watch | fanfest | food | parade | after',
+  'title: required, 1–200 chars',
+  'startsAt / endsAt: ISO 8601 with timezone offset (e.g. -04:00 for EDT)',
+  'countryCode: ISO 3-letter (e.g. BRA, ARG, USA) — optional',
+  'venueName / venueHood / venueMapUrl: use these for any venue not in our DB',
+  'sourceUrl: original post link (Instagram, etc.) — optional',
+  'isFree: boolean, defaults to false',
+  'Omit imageUrl — upload the image below and it will be merged in automatically',
+  'Omit venueId and matchId — they require internal DB ULIDs you won’t have',
+];
 
 function tabStyle(active: boolean): CSSProperties {
   return {
@@ -609,6 +664,221 @@ function AddEventForm({ code }: { code: string }) {
   );
 }
 
+// ── JSON entry (paste an AI-generated payload) ──────────────────────────────
+function JsonEventForm({ code }: { code: string }) {
+  const [jsonText, setJsonText] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [doneId, setDoneId] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const reset = () => {
+    setJsonText('');
+    setImageUrl('');
+    setDoneId('');
+    setError('');
+  };
+
+  const onPickFile = async (file: File | null) => {
+    if (!file) return;
+    setError('');
+    if (!file.type.startsWith('image/')) {
+      setError('Only image files (jpg, png, webp, gif).');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setError('Image must be 10 MB or smaller.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const presigned = await api<UploadUrlResponse>(
+        '/v1/events/submissions/upload-url',
+        code,
+        { method: 'POST', body: JSON.stringify({ contentType: file.type }) },
+      );
+      const putResp = await fetch(presigned.uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      if (!putResp.ok) {
+        throw new Error(`S3 upload failed (${putResp.status}).`);
+      }
+      setImageUrl(presigned.publicUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const copyTemplate = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON_TEMPLATE);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard may be unavailable in some contexts */
+    }
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setError('');
+
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(jsonText) as Record<string, unknown>;
+    } catch {
+      return setError('Invalid JSON — check for missing commas, quotes, or brackets.');
+    }
+    if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+      return setError('JSON must be an object.');
+    }
+    // Uploaded image always wins over any imageUrl the AI may have invented.
+    if (imageUrl) payload.imageUrl = imageUrl;
+
+    setBusy(true);
+    try {
+      const result = await api<{ id: string }>('/v1/events/submissions', code, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setDoneId(result.id);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not reach the server.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (doneId) {
+    return (
+      <div style={s.card}>
+        <h1 style={s.h1}>Event submitted</h1>
+        <p style={s.sub}>
+          Saved as <code>{doneId}</code>. It is pending review and will go live once an
+          admin approves it.
+        </p>
+        <button style={s.button} type="button" onClick={reset}>
+          Add another
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form style={s.card} onSubmit={submit}>
+      <h1 style={s.h1}>Add an event (JSON)</h1>
+      <p style={s.sub}>
+        Drop a flyer image into an AI with the reference below, paste the JSON it returns
+        here, upload the same image, and submit.
+      </p>
+
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          margin: '14px 0 6px',
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 600 }}>
+          Reference — what the AI should return
+        </span>
+        <button
+          type="button"
+          onClick={copyTemplate}
+          style={{
+            fontSize: 12,
+            color: COLORS.muted,
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+          }}
+        >
+          {copied ? 'Copied ✓' : 'Copy'}
+        </button>
+      </div>
+      <pre style={s.pre}>{JSON_TEMPLATE}</pre>
+      <ul style={s.notes}>
+        {JSON_FIELD_NOTES.map((n) => (
+          <li key={n}>{n}</li>
+        ))}
+      </ul>
+
+      <label style={s.label} htmlFor="jsonImage">
+        Image{' '}
+        <span style={{ color: COLORS.muted, fontWeight: 400 }}>
+          (jpg, png, webp, gif · up to 10 MB)
+        </span>
+      </label>
+      {imageUrl ? (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginTop: 4 }}>
+          <img
+            src={imageUrl}
+            alt="uploaded preview"
+            style={{
+              width: 96,
+              maxHeight: 160,
+              objectFit: 'cover',
+              borderRadius: 8,
+              border: `1px solid ${COLORS.line}`,
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setImageUrl('')}
+            style={{
+              fontSize: 12,
+              color: COLORS.danger,
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+            }}
+          >
+            Remove
+          </button>
+        </div>
+      ) : (
+        <input
+          id="jsonImage"
+          style={s.input}
+          type="file"
+          accept="image/*"
+          disabled={uploading}
+          onChange={(e) => void onPickFile(e.target.files?.[0] ?? null)}
+        />
+      )}
+      {uploading && (
+        <p style={{ fontSize: 12, color: COLORS.muted, marginTop: 6 }}>Uploading…</p>
+      )}
+
+      <label style={s.label} htmlFor="jsonBody">
+        JSON
+      </label>
+      <textarea
+        id="jsonBody"
+        style={s.textarea}
+        placeholder="paste the AI-generated JSON here…"
+        value={jsonText}
+        onChange={(e) => setJsonText(e.target.value)}
+      />
+
+      {error && <div style={s.errorBox}>{error}</div>}
+      <button style={s.button} type="submit" disabled={busy || uploading}>
+        {busy ? 'Submitting…' : 'Submit event'}
+      </button>
+    </form>
+  );
+}
+
 // ── Admin review queue ──────────────────────────────────────────────────────
 function ReviewQueue({ code }: { code: string }) {
   const [events, setEvents] = useState<PendingEvent[]>([]);
@@ -772,7 +1042,7 @@ function ReviewQueue({ code }: { code: string }) {
 export function SubmitPage() {
   const [code, setCode] = useState('');
   const [session, setSession] = useState<Session | null>(null);
-  const [tab, setTab] = useState<'add' | 'review'>('add');
+  const [tab, setTab] = useState<'form' | 'json' | 'review'>('form');
 
   if (!API_BASE) {
     return (
@@ -806,11 +1076,14 @@ export function SubmitPage() {
         <p style={{ ...s.sub, textAlign: 'right' }}>
           Signed in as <strong>{session.label}</strong> ({session.role})
         </p>
-        {session.role === 'admin' && (
-          <div style={s.tabRow}>
-            <button type="button" style={tabStyle(tab === 'add')} onClick={() => setTab('add')}>
-              Add event
-            </button>
+        <div style={s.tabRow}>
+          <button type="button" style={tabStyle(tab === 'form')} onClick={() => setTab('form')}>
+            Form
+          </button>
+          <button type="button" style={tabStyle(tab === 'json')} onClick={() => setTab('json')}>
+            JSON
+          </button>
+          {session.role === 'admin' && (
             <button
               type="button"
               style={tabStyle(tab === 'review')}
@@ -818,10 +1091,12 @@ export function SubmitPage() {
             >
               Review queue
             </button>
-          </div>
-        )}
+          )}
+        </div>
         {tab === 'review' && session.role === 'admin' ? (
           <ReviewQueue code={code} />
+        ) : tab === 'json' ? (
+          <JsonEventForm code={code} />
         ) : (
           <AddEventForm code={code} />
         )}

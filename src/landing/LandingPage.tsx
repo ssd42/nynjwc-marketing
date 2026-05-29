@@ -141,7 +141,7 @@ function Hero() {
             alt=""
             width={28}
             height={28}
-            style={{ display: 'block', objectFit: 'contain' }}
+            style={{ display: 'block', objectFit: 'contain', mixBlendMode: 'multiply' }}
           />
           <div
             style={{
@@ -313,6 +313,35 @@ function Hero() {
               </span>
               <span style={{ fontSize: 18, fontWeight: 600, marginTop: 3, letterSpacing: -0.3 }}>
                 App Store
+              </span>
+            </div>
+          </div>
+
+          {/* Non-clickable — the Android app follows iOS. */}
+          <div
+            aria-label="Android app — coming soon to Google Play"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 10,
+              background: 'transparent',
+              color: '#8a7f72',
+              padding: '14px 20px 14px 16px',
+              borderRadius: 14,
+              border: '1px solid #d8d1c5',
+              fontFamily: '-apple-system, system-ui',
+              cursor: 'default',
+            }}
+          >
+            <svg width="20" height="24" viewBox="0 0 22 26" fill="#a89f90">
+              <path d="M4.5 2.2c-.4.3-.6.8-.6 1.4v18.8c0 .6.2 1.1.6 1.4l10.6-10.8L4.5 2.2zm12 9.6L6.2 2 16.2 7.7l-1.5 1.5 1.8 3.6zm0 2.4l-1.8 3.6 1.5 1.5L6.2 24l10.3-9.8zm3.9-3.4l-2.6 1.5 1.5 1.7-1.5 1.7 2.6 1.5c1.1-.6 1.1-2.7 0-3.4l-.8-.5.8-.5c1.1-.7 1.1-2.8 0-3.4z" />
+            </svg>
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>
+                Coming soon
+              </span>
+              <span style={{ fontSize: 18, fontWeight: 600, marginTop: 3, letterSpacing: -0.3 }}>
+                Google Play
               </span>
             </div>
           </div>
@@ -1064,6 +1093,35 @@ function Footer() {
               </span>
               <span style={{ fontSize: 18, fontWeight: 600, marginTop: 3, letterSpacing: -0.3 }}>
                 App Store
+              </span>
+            </div>
+          </div>
+
+          {/* Non-clickable — the Android app follows iOS. */}
+          <div
+            aria-label="Android app — coming soon to Google Play"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 10,
+              background: 'transparent',
+              color: 'rgba(251,248,243,0.55)',
+              padding: '14px 20px 14px 16px',
+              borderRadius: 14,
+              border: '1px solid rgba(251,248,243,0.28)',
+              fontFamily: '-apple-system, system-ui',
+              cursor: 'default',
+            }}
+          >
+            <svg width="20" height="24" viewBox="0 0 22 26" fill="rgba(251,248,243,0.45)">
+              <path d="M4.5 2.2c-.4.3-.6.8-.6 1.4v18.8c0 .6.2 1.1.6 1.4l10.6-10.8L4.5 2.2zm12 9.6L6.2 2 16.2 7.7l-1.5 1.5 1.8 3.6zm0 2.4l-1.8 3.6 1.5 1.5L6.2 24l10.3-9.8zm3.9-3.4l-2.6 1.5 1.5 1.7-1.5 1.7 2.6 1.5c1.1-.6 1.1-2.7 0-3.4l-.8-.5.8-.5c1.1-.7 1.1-2.8 0-3.4z" />
+            </svg>
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>
+                Coming soon
+              </span>
+              <span style={{ fontSize: 18, fontWeight: 600, marginTop: 3, letterSpacing: -0.3 }}>
+                Google Play
               </span>
             </div>
           </div>
