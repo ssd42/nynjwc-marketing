@@ -10,7 +10,7 @@
  * public feed until approved here — see nynjwc-backend/app/api/event_submissions.py.
  */
 
-import { useCallback, useEffect, useState, type CSSProperties, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 
 const API_BASE: string = import.meta.env.VITE_API_BASE_URL ?? '';
 
@@ -207,13 +207,59 @@ const JSON_FIELD_NOTES: string[] = [
   'kind: one of watch | fanfest | food | parade | after',
   'title: required, 1–200 chars',
   'startsAt / endsAt: ISO 8601 with timezone offset (e.g. -04:00 for EDT)',
-  'countryCode: ISO 3-letter (e.g. BRA, ARG, USA) — optional',
+  'countryCode: ISO 3-letter — optional, must be one of the codes listed below',
   'venueName / venueHood / venueMapUrl: use these for any venue not in our DB',
   'sourceUrl: original post link (Instagram, etc.) — optional',
   'isFree: boolean, defaults to false',
   'Omit imageUrl — upload the image below and it will be merged in automatically',
   'Omit venueId and matchId — they require internal DB ULIDs you won’t have',
 ];
+
+// Mirrors the CountryCode union in nynjwc-frontend/src/types/domain.ts.
+// Static so the AI generating JSON sees the exact valid set; if the frontend
+// list changes, copy it over here too.
+const VALID_KINDS = ['watch', 'fanfest', 'food', 'parade', 'after'] as const;
+const COUNTRY_CODES: readonly string[] = [
+  'ALG', 'AND', 'ARG', 'ARU', 'AUS', 'AUT', 'BEL', 'BIH', 'BOL', 'BRA',
+  'CAN', 'CHI', 'CIV', 'COD', 'COL', 'CPV', 'CRC', 'CRO', 'CUW', 'CZE',
+  'DEN', 'DOM', 'ECU', 'EGY', 'ENG', 'ESP', 'FIN', 'FRA', 'GER', 'GHA',
+  'GUA', 'HAI', 'HON', 'HUN', 'IRL', 'IRN', 'IRQ', 'ISL', 'JOR', 'JPN',
+  'KOR', 'KSA', 'MAR', 'MEX', 'MKD', 'NCA', 'NED', 'NGA', 'NIR', 'NOR',
+  'NZL', 'PAN', 'PAR', 'PER', 'POL', 'POR', 'QAT', 'RSA', 'RUS', 'SCO',
+  'SEN', 'SLV', 'SRB', 'SUI', 'SVN', 'SWE', 'TUN', 'TUR', 'URU', 'USA',
+  'UZB', 'VEN', 'WAL',
+];
+const COUNTRY_CODE_SET = new Set(COUNTRY_CODES);
+
+// Validates a parsed JSON payload before we ship it to the API. Returns
+// the first problem found (so the user can fix one thing and see the next
+// on resubmit) or null when everything looks good.
+function validateEventPayload(payload: Record<string, unknown>): string | null {
+  if (typeof payload.kind !== 'string') return 'kind is required (watch | fanfest | food | parade | after).';
+  if (!(VALID_KINDS as readonly string[]).includes(payload.kind)) {
+    return `kind "${payload.kind}" is not valid — use one of: ${VALID_KINDS.join(', ')}.`;
+  }
+  if (typeof payload.title !== 'string' || payload.title.trim().length === 0) {
+    return 'title is required.';
+  }
+  if (typeof payload.startsAt !== 'string' || Number.isNaN(Date.parse(payload.startsAt))) {
+    return 'startsAt must be an ISO 8601 timestamp with timezone (e.g. 2026-06-14T19:00:00-04:00).';
+  }
+  if (payload.endsAt !== undefined && payload.endsAt !== null) {
+    if (typeof payload.endsAt !== 'string' || Number.isNaN(Date.parse(payload.endsAt))) {
+      return 'endsAt must be an ISO 8601 timestamp with timezone, or omitted.';
+    }
+  }
+  if (payload.countryCode !== undefined && payload.countryCode !== null) {
+    if (typeof payload.countryCode !== 'string' || !COUNTRY_CODE_SET.has(payload.countryCode)) {
+      return `countryCode "${String(payload.countryCode)}" is not in our supported list — see the codes below.`;
+    }
+  }
+  if (payload.isFree !== undefined && typeof payload.isFree !== 'boolean') {
+    return 'isFree must be true or false.';
+  }
+  return null;
+}
 
 function tabStyle(active: boolean): CSSProperties {
   return {
@@ -674,6 +720,22 @@ function JsonEventForm({ code }: { code: string }) {
   const [doneId, setDoneId] = useState('');
   const [copied, setCopied] = useState(false);
 
+  // Live-parse jsonText so the user can test the venueMapUrl in a new tab
+  // before committing. Silent on parse errors — the live preview is a
+  // best-effort convenience, not a validation surface.
+  const previewMapUrl = useMemo<string | null>(() => {
+    if (!jsonText.trim()) return null;
+    try {
+      const parsed = JSON.parse(jsonText) as Record<string, unknown>;
+      const url = parsed?.venueMapUrl;
+      if (typeof url !== 'string') return null;
+      if (!/^https?:\/\//i.test(url)) return null;
+      return url;
+    } catch {
+      return null;
+    }
+  }, [jsonText]);
+
   const reset = () => {
     setJsonText('');
     setImageUrl('');
@@ -739,6 +801,8 @@ function JsonEventForm({ code }: { code: string }) {
     if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
       return setError('JSON must be an object.');
     }
+    const problem = validateEventPayload(payload);
+    if (problem) return setError(problem);
     // Uploaded image always wins over any imageUrl the AI may have invented.
     if (imageUrl) payload.imageUrl = imageUrl;
 
@@ -811,6 +875,39 @@ function JsonEventForm({ code }: { code: string }) {
           <li key={n}>{n}</li>
         ))}
       </ul>
+      <div style={{ margin: '10px 0 4px', fontSize: 12, fontWeight: 600, color: COLORS.ink }}>
+        Valid country codes ({COUNTRY_CODES.length})
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 4,
+          padding: 8,
+          border: `1px solid ${COLORS.line}`,
+          borderRadius: 6,
+          background: '#fafafa',
+          maxHeight: 140,
+          overflowY: 'auto',
+          fontFamily: 'ui-monospace, SF Mono, monospace',
+          fontSize: 11,
+        }}
+      >
+        {COUNTRY_CODES.map((c) => (
+          <span
+            key={c}
+            style={{
+              padding: '2px 6px',
+              background: '#fff',
+              border: `1px solid ${COLORS.line}`,
+              borderRadius: 4,
+              color: COLORS.ink,
+            }}
+          >
+            {c}
+          </span>
+        ))}
+      </div>
 
       <label style={s.label} htmlFor="jsonImage">
         Image{' '}
@@ -870,6 +967,31 @@ function JsonEventForm({ code }: { code: string }) {
         value={jsonText}
         onChange={(e) => setJsonText(e.target.value)}
       />
+
+      {previewMapUrl && (
+        <a
+          href={previewMapUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            marginTop: 8,
+            padding: '6px 12px',
+            border: `1px solid ${COLORS.line}`,
+            borderRadius: 6,
+            background: '#fff',
+            color: COLORS.ink,
+            fontSize: 12,
+            fontWeight: 600,
+            textDecoration: 'none',
+            alignSelf: 'flex-start',
+          }}
+        >
+          Open venueMapUrl in new tab ↗
+        </a>
+      )}
 
       {error && <div style={s.errorBox}>{error}</div>}
       <button style={s.button} type="submit" disabled={busy || uploading}>
