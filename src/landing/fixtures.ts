@@ -97,18 +97,25 @@ function match(
   stage: string,
   extra: Partial<Match> = {},
 ): Match {
+  // Build every field explicitly rather than spreading `extra` over the
+  // defaults: under exactOptionalPropertyTypes a `...Partial<Match>` spread
+  // would widen required fields (e.g. `status`) back to optional. `status`
+  // defaults from `live` unless the caller overrides it.
+  const live = extra.live ?? false;
   return {
     id,
     home,
     away,
-    homeLabel: null,
-    awayLabel: null,
+    homeLabel: extra.homeLabel ?? null,
+    awayLabel: extra.awayLabel ?? null,
     kickoffAt: iso(kickoffMins),
     time: etTime(new Date(Date.now() + kickoffMins * 60_000)),
     stage,
-    stadium: 'MetLife Stadium',
-    live: false,
-    ...extra,
+    stadium: extra.stadium ?? 'MetLife Stadium',
+    status: extra.status ?? (live ? 'LIVE' : 'SCHEDULED'),
+    live,
+    minute: extra.minute ?? null,
+    score: extra.score ?? null,
   };
 }
 

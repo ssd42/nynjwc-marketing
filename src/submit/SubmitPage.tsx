@@ -1,13 +1,16 @@
 /**
- * Gated event-entry tool — the unadvertised /submit.html.
+ * Gated submission tool — the unadvertised /submit.html.
  *
- * Two steps: a code gate, then a tabbed workspace. Anyone with a valid code
- * can add events; an `admin`-role code also unlocks the review queue. The
- * code is held in React state only (never localStorage) and sent on every
- * request as the `X-Event-Code` header.
+ * Two steps: a code gate, then a workspace that toggles between two modes —
+ * Event and Venue — each with a Form tab, a JSON (AI-assisted) tab, and an
+ * admin-only Review queue. Anyone with a valid code can submit; an
+ * `admin`-role code unlocks the queues. The code is held in React state only
+ * (never localStorage) and sent on every request as the `X-Event-Code` header.
  *
- * Submitted events land server-side as status='pending' and stay out of the
- * public feed until approved here — see nynjwc-backend/app/api/event_submissions.py.
+ * Submissions land server-side as status='pending' and stay out of the app
+ * until approved here. Events live in the events table; approved venues are
+ * promoted into the canonical venues table. See
+ * nynjwc-backend/app/api/{event_submissions,venue_submissions}.py.
  */
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
@@ -42,6 +45,21 @@ type PendingEvent = {
   imageUrl: string | null;
   sourceUrl: string | null;
   isFree: boolean;
+  submittedBy: string | null;
+  createdAt: string;
+};
+
+type PendingVenue = {
+  id: string;
+  countryCode: string;
+  name: string;
+  type: string;
+  hood: string;
+  lat: number;
+  lng: number;
+  googleMapsUrl: string | null;
+  imageUrl: string | null;
+  sourceUrl: string | null;
   submittedBy: string | null;
   createdAt: string;
 };
@@ -261,6 +279,54 @@ function validateEventPayload(payload: Record<string, unknown>): string | null {
   return null;
 }
 
+// ── Venue submission: JSON reference + validation ───────────────────────────
+const VENUE_JSON_TEMPLATE = `{
+  "countryCode": "BRA",
+  "name": "Boteco da Esquina",
+  "type": "Brazilian Bar",
+  "hood": "Ironbound, Newark",
+  "lat": 40.7320,
+  "lng": -74.1620,
+  "googleMapsUrl": "https://maps.google.com/?q=...",
+  "sourceUrl": "https://www.instagram.com/p/..."
+}`;
+
+const VENUE_JSON_FIELD_NOTES: string[] = [
+  'countryCode: ISO 3-letter — must be one of the codes listed below',
+  'name / type / hood: required (type is the cuisine/venue descriptor, e.g. "Brazilian Steakhouse")',
+  'lat / lng: required decimal degrees. In Google Maps, right-click the spot → click the “lat, lng” at the top to copy them',
+  'googleMapsUrl: link to the place — optional',
+  'sourceUrl: original listing / Instagram post — optional',
+  'Omit imageUrl — upload the photo below and it is merged in automatically',
+  'Omit photoSlug / displayOrder — assigned automatically when an admin approves',
+];
+
+// Generous NY/NJ-area sanity box — mirrors the backend check in
+// app/schemas/venue_submission.py. Catches swapped lat/lng and ocean typos.
+const VENUE_LAT = [39.0, 42.0] as const;
+const VENUE_LNG = [-76.0, -72.0] as const;
+
+function coordsLookSane(lat: number, lng: number): boolean {
+  return lat >= VENUE_LAT[0] && lat <= VENUE_LAT[1] && lng >= VENUE_LNG[0] && lng <= VENUE_LNG[1];
+}
+
+// Validates a parsed venue JSON payload before shipping it to the API.
+function validateVenuePayload(payload: Record<string, unknown>): string | null {
+  if (typeof payload.countryCode !== 'string' || !COUNTRY_CODE_SET.has(payload.countryCode)) {
+    return `countryCode "${String(payload.countryCode)}" is not in our supported list — see the codes below.`;
+  }
+  for (const field of ['name', 'type', 'hood'] as const) {
+    const v = payload[field];
+    if (typeof v !== 'string' || v.trim().length === 0) return `${field} is required.`;
+  }
+  if (typeof payload.lat !== 'number' || Number.isNaN(payload.lat)) return 'lat must be a number.';
+  if (typeof payload.lng !== 'number' || Number.isNaN(payload.lng)) return 'lng must be a number.';
+  if (!coordsLookSane(payload.lat, payload.lng)) {
+    return 'lat/lng look wrong for the NY/NJ area — check they aren’t swapped (lat ~40.x, lng ~-74.x).';
+  }
+  return null;
+}
+
 function tabStyle(active: boolean): CSSProperties {
   return {
     flex: 1,
@@ -287,7 +353,7 @@ function Gate({ onUnlock }: { onUnlock: (code: string, session: Session) => void
     setBusy(true);
     setError('');
     try {
-      const session = await api<Session>('/v1/events/submissions/verify', code.trim(), {
+      const session = await api<Session>('/v1/submissions/verify', code.trim(), {
         method: 'POST',
       });
       onUnlock(code.trim(), session);
@@ -301,7 +367,7 @@ function Gate({ onUnlock }: { onUnlock: (code: string, session: Session) => void
   return (
     <div style={s.shell}>
       <form style={s.card} onSubmit={submit}>
-        <h1 style={s.h1}>Event entry</h1>
+        <h1 style={s.h1}>Submissions</h1>
         <p style={s.sub}>Enter your access code to continue.</p>
         <label style={s.label} htmlFor="code">
           Access code
@@ -1160,11 +1226,640 @@ function ReviewQueue({ code }: { code: string }) {
   );
 }
 
+// ── Add-venue form ──────────────────────────────────────────────────────────
+function AddVenueForm({ code }: { code: string }) {
+  const [countryCode, setCountryCode] = useState('');
+  const [name, setName] = useState('');
+  const [type, setType] = useState('');
+  const [hood, setHood] = useState('');
+  const [lat, setLat] = useState('');
+  const [lng, setLng] = useState('');
+  const [googleMapsUrl, setGoogleMapsUrl] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [doneId, setDoneId] = useState('');
+
+  useEffect(() => {
+    api<Country[]>('/v1/countries', code)
+      .then(setCountries)
+      .catch(() => setError('Could not load the country list.'));
+  }, [code]);
+
+  const reset = () => {
+    setName('');
+    setType('');
+    setHood('');
+    setLat('');
+    setLng('');
+    setGoogleMapsUrl('');
+    setSourceUrl('');
+    setImageUrl('');
+    setDoneId('');
+  };
+
+  const onPickFile = async (file: File | null) => {
+    if (!file) return;
+    setError('');
+    if (!file.type.startsWith('image/')) {
+      setError('Only image files (jpg, png, webp, gif).');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setError('Image must be 10 MB or smaller.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const presigned = await api<UploadUrlResponse>(
+        '/v1/venues/submissions/upload-url',
+        code,
+        { method: 'POST', body: JSON.stringify({ contentType: file.type }) },
+      );
+      const putResp = await fetch(presigned.uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      if (!putResp.ok) {
+        throw new Error(`S3 upload failed (${putResp.status}).`);
+      }
+      setImageUrl(presigned.publicUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setError('');
+
+    if (!countryCode) return setError('Pick a country.');
+    if (!name.trim()) return setError('Give the venue a name.');
+    if (!type.trim()) return setError('Add a type (e.g. Brazilian Steakhouse).');
+    if (!hood.trim()) return setError('Add a neighborhood.');
+    const latNum = Number(lat);
+    const lngNum = Number(lng);
+    if (!lat.trim() || Number.isNaN(latNum)) return setError('Enter a numeric latitude.');
+    if (!lng.trim() || Number.isNaN(lngNum)) return setError('Enter a numeric longitude.');
+    if (!coordsLookSane(latNum, lngNum)) {
+      return setError('Coordinates look off for NY/NJ — check lat/lng aren’t swapped (lat ~40.x, lng ~-74.x).');
+    }
+
+    const payload: Record<string, unknown> = {
+      countryCode,
+      name: name.trim(),
+      type: type.trim(),
+      hood: hood.trim(),
+      lat: latNum,
+      lng: lngNum,
+    };
+    if (googleMapsUrl.trim()) payload.googleMapsUrl = googleMapsUrl.trim();
+    if (sourceUrl.trim()) payload.sourceUrl = sourceUrl.trim();
+    if (imageUrl) payload.imageUrl = imageUrl;
+
+    setBusy(true);
+    try {
+      const result = await api<{ id: string }>('/v1/venues/submissions', code, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setDoneId(result.id);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not reach the server.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (doneId) {
+    return (
+      <div style={s.card}>
+        <h1 style={s.h1}>Venue submitted</h1>
+        <p style={s.sub}>
+          Saved as <code>{doneId}</code>. It is pending review and is added to the app once
+          an admin approves it.
+        </p>
+        <button style={s.button} type="button" onClick={reset}>
+          Add another
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form style={s.card} onSubmit={submit}>
+      <h1 style={s.h1}>Add a venue</h1>
+      <p style={s.sub}>It will be reviewed before being added to the app.</p>
+
+      <label style={s.label} htmlFor="vCountry">
+        Country
+      </label>
+      <select
+        id="vCountry"
+        style={s.input}
+        value={countryCode}
+        onChange={(e) => setCountryCode(e.target.value)}
+      >
+        <option value="">— pick a country —</option>
+        {countries.map((c) => (
+          <option key={c.code} value={c.code}>
+            {c.flagEmoji} {c.name}
+          </option>
+        ))}
+      </select>
+
+      <label style={s.label} htmlFor="vName">
+        Name
+      </label>
+      <input
+        id="vName"
+        style={s.input}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="e.g. Boteco da Esquina"
+      />
+
+      <label style={s.label} htmlFor="vType">
+        Type <span style={{ color: COLORS.muted, fontWeight: 400 }}>(cuisine / venue descriptor)</span>
+      </label>
+      <input
+        id="vType"
+        style={s.input}
+        value={type}
+        onChange={(e) => setType(e.target.value)}
+        placeholder="e.g. Brazilian Steakhouse · Rodizio"
+      />
+
+      <label style={s.label} htmlFor="vHood">
+        Neighborhood
+      </label>
+      <input
+        id="vHood"
+        style={s.input}
+        value={hood}
+        onChange={(e) => setHood(e.target.value)}
+        placeholder="e.g. Ironbound, Newark"
+      />
+
+      <label style={s.label}>
+        Coordinates{' '}
+        <span style={{ color: COLORS.muted, fontWeight: 400 }}>
+          (right-click the spot in Google Maps → click the “lat, lng” to copy)
+        </span>
+      </label>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          aria-label="latitude"
+          style={s.input}
+          type="number"
+          step="any"
+          inputMode="decimal"
+          placeholder="lat (e.g. 40.7320)"
+          value={lat}
+          onChange={(e) => setLat(e.target.value)}
+        />
+        <input
+          aria-label="longitude"
+          style={s.input}
+          type="number"
+          step="any"
+          inputMode="decimal"
+          placeholder="lng (e.g. -74.1620)"
+          value={lng}
+          onChange={(e) => setLng(e.target.value)}
+        />
+      </div>
+
+      <label style={s.label} htmlFor="vMapUrl">
+        Google Maps URL <span style={{ color: COLORS.muted, fontWeight: 400 }}>(optional)</span>
+      </label>
+      <input
+        id="vMapUrl"
+        style={s.input}
+        type="url"
+        placeholder="https://maps.google.com/?q=…"
+        value={googleMapsUrl}
+        onChange={(e) => setGoogleMapsUrl(e.target.value)}
+      />
+
+      <label style={s.label} htmlFor="vImage">
+        Photo <span style={{ color: COLORS.muted, fontWeight: 400 }}>(jpg, png, webp, gif · up to 10 MB · optional)</span>
+      </label>
+      {imageUrl ? (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginTop: 4 }}>
+          <img
+            src={imageUrl}
+            alt="uploaded preview"
+            style={{
+              width: 96,
+              maxHeight: 160,
+              objectFit: 'cover',
+              borderRadius: 8,
+              border: `1px solid ${COLORS.line}`,
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setImageUrl('')}
+            style={{ fontSize: 12, color: COLORS.danger, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          >
+            Remove
+          </button>
+        </div>
+      ) : (
+        <input
+          id="vImage"
+          style={s.input}
+          type="file"
+          accept="image/*"
+          disabled={uploading}
+          onChange={(e) => void onPickFile(e.target.files?.[0] ?? null)}
+        />
+      )}
+      {uploading && <p style={{ fontSize: 12, color: COLORS.muted, marginTop: 6 }}>Uploading…</p>}
+
+      <label style={s.label} htmlFor="vSourceUrl">
+        Source URL <span style={{ color: COLORS.muted, fontWeight: 400 }}>(listing / Instagram, optional)</span>
+      </label>
+      <input
+        id="vSourceUrl"
+        style={s.input}
+        type="url"
+        placeholder="https://www.instagram.com/p/…"
+        value={sourceUrl}
+        onChange={(e) => setSourceUrl(e.target.value)}
+      />
+
+      {error && <div style={s.errorBox}>{error}</div>}
+      <button style={s.button} type="submit" disabled={busy || uploading}>
+        {busy ? 'Submitting…' : 'Submit venue'}
+      </button>
+    </form>
+  );
+}
+
+// ── Venue JSON entry (paste an AI-generated payload) ────────────────────────
+function JsonVenueForm({ code }: { code: string }) {
+  const [jsonText, setJsonText] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [doneId, setDoneId] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const reset = () => {
+    setJsonText('');
+    setImageUrl('');
+    setDoneId('');
+    setError('');
+  };
+
+  const onPickFile = async (file: File | null) => {
+    if (!file) return;
+    setError('');
+    if (!file.type.startsWith('image/')) {
+      setError('Only image files (jpg, png, webp, gif).');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setError('Image must be 10 MB or smaller.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const presigned = await api<UploadUrlResponse>(
+        '/v1/venues/submissions/upload-url',
+        code,
+        { method: 'POST', body: JSON.stringify({ contentType: file.type }) },
+      );
+      const putResp = await fetch(presigned.uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      if (!putResp.ok) {
+        throw new Error(`S3 upload failed (${putResp.status}).`);
+      }
+      setImageUrl(presigned.publicUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const copyTemplate = async () => {
+    try {
+      await navigator.clipboard.writeText(VENUE_JSON_TEMPLATE);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard may be unavailable in some contexts */
+    }
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setError('');
+
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(jsonText) as Record<string, unknown>;
+    } catch {
+      return setError('Invalid JSON — check for missing commas, quotes, or brackets.');
+    }
+    if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+      return setError('JSON must be an object.');
+    }
+    const problem = validateVenuePayload(payload);
+    if (problem) return setError(problem);
+    if (imageUrl) payload.imageUrl = imageUrl;
+
+    setBusy(true);
+    try {
+      const result = await api<{ id: string }>('/v1/venues/submissions', code, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setDoneId(result.id);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not reach the server.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (doneId) {
+    return (
+      <div style={s.card}>
+        <h1 style={s.h1}>Venue submitted</h1>
+        <p style={s.sub}>
+          Saved as <code>{doneId}</code>. It is pending review and is added to the app once
+          an admin approves it.
+        </p>
+        <button style={s.button} type="button" onClick={reset}>
+          Add another
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form style={s.card} onSubmit={submit}>
+      <h1 style={s.h1}>Add a venue (JSON)</h1>
+      <p style={s.sub}>
+        Ask an AI to research a venue using the reference below, paste the JSON it returns
+        here, optionally upload a photo, and submit.
+      </p>
+
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          margin: '14px 0 6px',
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 600 }}>Reference — what the AI should return</span>
+        <button
+          type="button"
+          onClick={copyTemplate}
+          style={{ fontSize: 12, color: COLORS.muted, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+        >
+          {copied ? 'Copied ✓' : 'Copy'}
+        </button>
+      </div>
+      <pre style={s.pre}>{VENUE_JSON_TEMPLATE}</pre>
+      <ul style={s.notes}>
+        {VENUE_JSON_FIELD_NOTES.map((n) => (
+          <li key={n}>{n}</li>
+        ))}
+      </ul>
+      <div style={{ margin: '10px 0 4px', fontSize: 12, fontWeight: 600, color: COLORS.ink }}>
+        Valid country codes ({COUNTRY_CODES.length})
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 4,
+          padding: 8,
+          border: `1px solid ${COLORS.line}`,
+          borderRadius: 6,
+          background: '#fafafa',
+          maxHeight: 140,
+          overflowY: 'auto',
+          fontFamily: 'ui-monospace, SF Mono, monospace',
+          fontSize: 11,
+        }}
+      >
+        {COUNTRY_CODES.map((c) => (
+          <span
+            key={c}
+            style={{ padding: '2px 6px', background: '#fff', border: `1px solid ${COLORS.line}`, borderRadius: 4, color: COLORS.ink }}
+          >
+            {c}
+          </span>
+        ))}
+      </div>
+
+      <label style={s.label} htmlFor="vJsonImage">
+        Photo{' '}
+        <span style={{ color: COLORS.muted, fontWeight: 400 }}>(jpg, png, webp, gif · up to 10 MB · optional)</span>
+      </label>
+      {imageUrl ? (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginTop: 4 }}>
+          <img
+            src={imageUrl}
+            alt="uploaded preview"
+            style={{ width: 96, maxHeight: 160, objectFit: 'cover', borderRadius: 8, border: `1px solid ${COLORS.line}` }}
+          />
+          <button
+            type="button"
+            onClick={() => setImageUrl('')}
+            style={{ fontSize: 12, color: COLORS.danger, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          >
+            Remove
+          </button>
+        </div>
+      ) : (
+        <input
+          id="vJsonImage"
+          style={s.input}
+          type="file"
+          accept="image/*"
+          disabled={uploading}
+          onChange={(e) => void onPickFile(e.target.files?.[0] ?? null)}
+        />
+      )}
+      {uploading && <p style={{ fontSize: 12, color: COLORS.muted, marginTop: 6 }}>Uploading…</p>}
+
+      <label style={s.label} htmlFor="vJsonBody">
+        JSON
+      </label>
+      <textarea
+        id="vJsonBody"
+        style={s.textarea}
+        placeholder="paste the AI-generated venue JSON here…"
+        value={jsonText}
+        onChange={(e) => setJsonText(e.target.value)}
+      />
+
+      {error && <div style={s.errorBox}>{error}</div>}
+      <button style={s.button} type="submit" disabled={busy || uploading}>
+        {busy ? 'Submitting…' : 'Submit venue'}
+      </button>
+    </form>
+  );
+}
+
+// ── Admin venue review queue ────────────────────────────────────────────────
+function VenueReviewQueue({ code }: { code: string }) {
+  const [venues, setVenues] = useState<PendingVenue[]>([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [actingId, setActingId] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      setVenues(await api<PendingVenue[]>('/v1/venues/submissions/pending', code));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not load the queue.');
+    } finally {
+      setLoading(false);
+    }
+  }, [code]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const moderate = async (id: string, action: 'approve' | 'reject') => {
+    if (actingId) return;
+    setActingId(id);
+    setError('');
+    try {
+      await api(`/v1/venues/submissions/${id}/${action}`, code, { method: 'POST' });
+      setVenues((prev) => prev.filter((v) => v.id !== id));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Action failed.');
+    } finally {
+      setActingId('');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={s.card}>
+        <p style={s.sub}>Loading queue…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={s.card}>
+      <h1 style={s.h1}>Venue review queue</h1>
+      <p style={s.sub}>
+        {venues.length === 0
+          ? 'Nothing pending — all caught up.'
+          : `${venues.length} venue${venues.length === 1 ? '' : 's'} awaiting review.`}
+      </p>
+      {error && <div style={s.errorBox}>{error}</div>}
+      {venues.map((v) => (
+        <div
+          key={v.id}
+          style={{ border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: 12, marginTop: 10, display: 'flex', gap: 12 }}
+        >
+          {v.imageUrl && (
+            <img
+              src={v.imageUrl}
+              alt=""
+              style={{ width: 72, height: 96, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}
+            />
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>{v.name}</div>
+            <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}>
+              {v.countryCode} · {v.type}
+            </div>
+            <div style={{ fontSize: 12, color: COLORS.muted }}>
+              {v.hood} · {v.lat.toFixed(4)}, {v.lng.toFixed(4)}
+              {v.submittedBy ? ` · submitted by ${v.submittedBy}` : ''}
+            </div>
+            {(v.googleMapsUrl || v.sourceUrl) && (
+              <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                {v.googleMapsUrl && (
+                  <a
+                    href={v.googleMapsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ fontSize: 12, fontWeight: 600, color: COLORS.ink, background: '#fff', border: `1px solid ${COLORS.line}`, borderRadius: 999, padding: '5px 10px', textDecoration: 'none' }}
+                  >
+                    Map ↗
+                  </a>
+                )}
+                {v.sourceUrl && (
+                  <a
+                    href={v.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ fontSize: 12, fontWeight: 600, color: COLORS.ink, background: '#fff', border: `1px solid ${COLORS.line}`, borderRadius: 999, padding: '5px 10px', textDecoration: 'none' }}
+                  >
+                    Source ↗
+                  </a>
+                )}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <button
+                type="button"
+                style={{ ...tabStyle(true), flex: 1 }}
+                disabled={actingId === v.id}
+                onClick={() => moderate(v.id, 'approve')}
+              >
+                Approve
+              </button>
+              <button
+                type="button"
+                style={{ ...tabStyle(false), flex: 1, color: COLORS.danger }}
+                disabled={actingId === v.id}
+                onClick={() => moderate(v.id, 'reject')}
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Page shell ──────────────────────────────────────────────────────────────
 export function SubmitPage() {
   const [code, setCode] = useState('');
   const [session, setSession] = useState<Session | null>(null);
+  const [mode, setMode] = useState<'event' | 'venue'>('event');
   const [tab, setTab] = useState<'form' | 'json' | 'review'>('form');
+
+  // Switching mode always returns to the Form tab — the Review tab is a
+  // different queue per mode, so carrying the tab across would be confusing.
+  const switchMode = (next: 'event' | 'venue') => {
+    setMode(next);
+    setTab('form');
+  };
 
   if (!API_BASE) {
     return (
@@ -1199,6 +1894,14 @@ export function SubmitPage() {
           Signed in as <strong>{session.label}</strong> ({session.role})
         </p>
         <div style={s.tabRow}>
+          <button type="button" style={tabStyle(mode === 'event')} onClick={() => switchMode('event')}>
+            Event
+          </button>
+          <button type="button" style={tabStyle(mode === 'venue')} onClick={() => switchMode('venue')}>
+            Venue
+          </button>
+        </div>
+        <div style={s.tabRow}>
           <button type="button" style={tabStyle(tab === 'form')} onClick={() => setTab('form')}>
             Form
           </button>
@@ -1215,7 +1918,15 @@ export function SubmitPage() {
             </button>
           )}
         </div>
-        {tab === 'review' && session.role === 'admin' ? (
+        {mode === 'venue' ? (
+          tab === 'review' && session.role === 'admin' ? (
+            <VenueReviewQueue code={code} />
+          ) : tab === 'json' ? (
+            <JsonVenueForm code={code} />
+          ) : (
+            <AddVenueForm code={code} />
+          )
+        ) : tab === 'review' && session.role === 'admin' ? (
           <ReviewQueue code={code} />
         ) : tab === 'json' ? (
           <JsonEventForm code={code} />
