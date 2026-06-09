@@ -1,0 +1,968 @@
+[
+  {
+    "country_code": "ARG",
+    "name": "Baires Grill",
+    "hood": "Hell's Kitchen",
+    "coords": "40.762948, -73.987924",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Baires%20Grill%2C%20350%20W%2050th%20St%2C%20New%20York%2C%20NY%2010019"
+  },
+  {
+    "country_code": "ARG",
+    "name": "Balvanera",
+    "hood": "Lower East Side",
+    "coords": "40.7211, -73.9854",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Balvanera%2C%20152%20Stanton%20St%2C%20New%20York%2C%20NY%2010002"
+  },
+  {
+    "country_code": "ARG",
+    "name": "Boca Juniors Restaurant",
+    "hood": "Elmhurst",
+    "coords": "40.737432, -73.882174",
+    "google_maps_url": "https://maps.app.goo.gl/mqArueQVUPmL5a69A"
+  },
+  {
+    "country_code": "ARG",
+    "name": "Buenos Aires Restaurant",
+    "hood": "East Village",
+    "coords": "40.7253, -73.9831",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Buenos%20Aires%20Restaurant%2C%20513%20E%206th%20St%2C%20New%20York%2C%20NY%2010009"
+  },
+  {
+    "country_code": "ARG",
+    "name": "El Gauchito",
+    "hood": "Corona",
+    "coords": "40.742016, -73.868032",
+    "google_maps_url": "https://maps.app.goo.gl/Y9X87fr6GeZwzJXn8"
+  },
+  {
+    "country_code": "ARG",
+    "name": "La Fusta",
+    "hood": "North Bergen",
+    "coords": "40.763634, -74.048477",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=La%20Fusta%2C%201110%20Tonnelle%20Ave%2C%20North%20Bergen%2C%20NJ%2007047"
+  },
+  {
+    "country_code": "ARG",
+    "name": "La Fusta (Elmhurst)",
+    "hood": "Elmhurst",
+    "coords": "40.744739, -73.884481",
+    "google_maps_url": "https://maps.app.goo.gl/QGcMwhjLQ7WaGU6y7"
+  },
+  {
+    "country_code": "ARG",
+    "name": "Libertador",
+    "hood": "Cobble Hill",
+    "coords": "40.687553, -73.997893",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Libertador%2C%20400%20Henry%20St%2C%20Brooklyn%2C%20NY%2011201"
+  },
+  {
+    "country_code": "ARG",
+    "name": "Patria Station Café",
+    "hood": "Berkeley Heights, NJ",
+    "coords": "40.6825028, -74.4438833",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Patria%20Station%20Cafe%20128%20Station%20Street%20Berkeley%20Heights%20NJ"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Altas Horas Lanches",
+    "hood": "Ironbound, Newark",
+    "coords": "40.728749, -74.15251",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Altas%20Horas%20Lanches%2C%20266%20Ferry%20St%2C%20Newark%2C%20NJ%2007105"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Beija Flor",
+    "hood": "Long Island City",
+    "coords": "40.754873, -73.933318",
+    "google_maps_url": "https://maps.app.goo.gl/7TyvZckZgMDP4CKx9"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Berimbau Brazilian Table",
+    "hood": "West Village",
+    "coords": "40.730138, -74.003702",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Berimbau%20Brazilian%20Table%2C%2043%20Carmine%20St%2C%20New%20York%2C%20NY%2010014"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Boi Na Brasa (Adams)",
+    "hood": "Ironbound",
+    "coords": "40.729951, -74.157769",
+    "google_maps_url": "https://maps.google.com/?q=70+Adams+St+Newark+NJ+07105"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Boi Na Brasa (Merchant)",
+    "hood": "Ironbound",
+    "coords": "40.7296074, -74.154293",
+    "google_maps_url": "https://maps.app.goo.gl/M1NPfcrRGopPEXSb6"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Brasas Grill Bar & Restaurant",
+    "hood": "Kearny Avenue",
+    "coords": "40.76628, -74.147544",
+    "google_maps_url": "https://maps.google.com/?q=449+Kearny+Ave+Kearny+NJ+07032"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Brasilia Grill",
+    "hood": "Ironbound, Newark",
+    "coords": "40.729057, -74.159811",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Brasilia%20Grill%2C%2099%20Monroe%20St%2C%20Newark%2C%20NJ%2007105"
+  },
+  {
+    "country_code": "BRA",
+    "name": "BRAZEIRO Churrascaria & Rodizio",
+    "hood": "Cliffside Park",
+    "coords": "40.8207101, -73.9909475",
+    "google_maps_url": "https://maps.app.goo.gl/rvPmLpHKjwA3DpUn8"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Casa Theodoro",
+    "hood": "Woodside",
+    "coords": "40.7586, -73.905",
+    "google_maps_url": "https://maps.app.goo.gl/197191yRngQXgxna6"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Favela Grill",
+    "hood": "Astoria",
+    "coords": "40.770505, -73.92546",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Favela%20Grill%2C%2033-18%2028th%20Ave%2C%20Astoria%2C%20NY%2011103"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Jacare Do Brasil Restaurant",
+    "hood": "Elizabeth",
+    "coords": "40.6554125, -74.1794852",
+    "google_maps_url": "https://maps.google.com/?q=347+Second+St+Elizabeth+NJ+07206"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Pão de Queijo",
+    "hood": "Astoria",
+    "coords": "40.763835, -73.923934",
+    "google_maps_url": "https://maps.app.goo.gl/35QuajUGZ5WndJiaA"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Portal Churrascaria",
+    "hood": "Elizabeth",
+    "coords": "40.6641815, -74.2132781",
+    "google_maps_url": "https://www.google.com/maps/place/Portal+Churrascaria/@40.6641734,-74.2158984,17z/data=!4m15!1m8!3m7!1s0x89c24d540b9b795d:0x2cac201cc5e2bf43!2s58+Jefferson+Ave,+Elizabeth,+NJ+07201!3b1!8m2!3d40.6641734!4d-74.2133235!16s%2Fg%2F11c4jtwbxn!3m5!1s0x89c24d6b977fa855:0xeda33f096b206c30!8m2!3d40.6641815!4d-74.2132781!16s%2Fg%2F11vrchmdmw?entry=ttu&g_ep=EgoyMDI2MDYwMS4wIKXMDSoASAFQAw%3D%3D"
+  },
+  {
+    "country_code": "BRA",
+    "name": "Villa Brazil Cafe",
+    "hood": "Astoria",
+    "coords": "40.755355, -73.916271",
+    "google_maps_url": "https://maps.app.goo.gl/Y9rV3bsm7tsz4Chf8"
+  },
+  {
+    "country_code": "COL",
+    "name": "Antojos Colombianos",
+    "hood": "Harrison",
+    "coords": "40.747131, -74.152384",
+    "google_maps_url": "https://maps.app.goo.gl/k1yEXxHZPfTrimg96"
+  },
+  {
+    "country_code": "COL",
+    "name": "Arepa Lady",
+    "hood": "Jackson Heights",
+    "coords": "40.749334, -73.888782",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Arepa%20Lady%2C%2077-17%2037th%20Ave%2C%20Jackson%20Heights%2C%20NY%2011372"
+  },
+  {
+    "country_code": "COL",
+    "name": "Barriles Restaurant & Sports Bar",
+    "hood": "Jackson Heights, Queens",
+    "coords": "40.749, -73.8847",
+    "google_maps_url": "https://maps.app.goo.gl/UhyZLgPRc4NmExjU6?g_st=ic"
+  },
+  {
+    "country_code": "COL",
+    "name": "Barriles Restaurant Sports Bar",
+    "hood": "Jackson Heights",
+    "coords": "40.749661, -73.883734",
+    "google_maps_url": "https://maps.app.goo.gl/eWgiWXZtB8HQcyxVA"
+  },
+  {
+    "country_code": "COL",
+    "name": "El Basurero Restaurante",
+    "hood": "Astoria",
+    "coords": "40.7584236, -73.919106",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=El%20Basurero%20Restaurante%2C%2032-17%20Steinway%20St%2C%20Astoria%2C%20NY%2011103"
+  },
+  {
+    "country_code": "COL",
+    "name": "La Pequeña Colombia",
+    "hood": "Jackson Heights",
+    "coords": "40.74782, -73.88244",
+    "google_maps_url": "https://maps.app.goo.gl/t5FzVaN49nAPAdFH8"
+  },
+  {
+    "country_code": "COL",
+    "name": "Mis Tierras Colombianas",
+    "hood": "Woodside",
+    "coords": "40.7447, -73.910271",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Mis%20Tierras%20Colombianas%2C%2054-08%20Roosevelt%20Ave%2C%20Woodside%2C%20NY%2011377"
+  },
+  {
+    "country_code": "COL",
+    "name": "Noches de Colombia",
+    "hood": "Elizabeth",
+    "coords": "40.645125, -74.213048",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Noches%20de%20Colombia%2C%20545%20Bayway%20Ave%2C%20Elizabeth%2C%20NJ%2007202"
+  },
+  {
+    "country_code": "COL",
+    "name": "Parceros Colombian Food",
+    "hood": "Harrison",
+    "coords": "40.7466, -74.1561",
+    "google_maps_url": "https://maps.google.com/?q=9+Frank+E+Rodgers+Blvd+N+Harrison+NJ+07029"
+  },
+  {
+    "country_code": "COL",
+    "name": "Seba Seba",
+    "hood": "Jackson Heights",
+    "coords": "40.7494074, -73.8863178",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=40.7494074%2C-73.8863178"
+  },
+  {
+    "country_code": "CRO",
+    "name": "Rudar Club",
+    "hood": "Astoria",
+    "coords": "40.7546074, -73.9167787",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Rudar%20Club%2C%2034-01%2045th%20St%2C%20Astoria%2C%20NY%2011103"
+  },
+  {
+    "country_code": "CRO",
+    "name": "Snack Bar",
+    "hood": "Hoboken, NJ",
+    "coords": "40.7441, -74.0288",
+    "google_maps_url": "https://maps.app.goo.gl/ncSV9DJMtPQQC9oy8?g_st=ic"
+  },
+  {
+    "country_code": "ECU",
+    "name": "Barzola",
+    "hood": "Jackson Heights",
+    "coords": "40.7506776, -73.8744815",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Barzola%2C%2092-12%2037th%20Ave%2C%20Jackson%20Heights%2C%20NY%2011372"
+  },
+  {
+    "country_code": "ECU",
+    "name": "La Boina Roja",
+    "hood": "Jackson Heights",
+    "coords": "40.749523, -73.885909",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=La%20Boina%20Roja%20Steak%20House%2C%2080-22%2037th%20Ave%2C%20Jackson%20Heights%2C%20NY%2011372"
+  },
+  {
+    "country_code": "ECU",
+    "name": "La Casita Del Bolon",
+    "hood": "Ironbound",
+    "coords": "40.73113, -74.146539",
+    "google_maps_url": "https://maps.app.goo.gl/SrcVABRGYnWW2mo19"
+  },
+  {
+    "country_code": "ECU",
+    "name": "La Chiflada NJ",
+    "hood": "Paterson, NJ",
+    "coords": "40.9093863, -74.1593465",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=La%20Chiflada%20NJ%2C%2062%20Dover%20St%2C%20Paterson%2C%20NJ%2007501"
+  },
+  {
+    "country_code": "ECU",
+    "name": "Leticia's",
+    "hood": "Corona",
+    "coords": "40.748968, -73.8633132",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=40.748968%2C-73.8633132"
+  },
+  {
+    "country_code": "ECU",
+    "name": "Mamazzita",
+    "hood": "Ironbound",
+    "coords": "40.721043, -74.159292",
+    "google_maps_url": "https://maps.google.com/?q=383+Chestnut+St+Newark+NJ+07105"
+  },
+  {
+    "country_code": "ECU",
+    "name": "Ñaños Restaurant & Grill Elizabeth",
+    "hood": "Elizabeth, NJ",
+    "coords": "40.663, -74.21",
+    "google_maps_url": "https://maps.app.goo.gl/dioLdcrD1NCmxXvg7?g_st=ic"
+  },
+  {
+    "country_code": "ECU",
+    "name": "Rincón Melania",
+    "hood": "Long Island City",
+    "coords": "40.747253, -73.93566",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Rinc%C3%B3n%20Melania%2C%2035-19%20Queens%20Blvd%2C%20Long%20Island%20City%2C%20NY%2011101"
+  },
+  {
+    "country_code": "ECU",
+    "name": "Sabor Cuancano Cuisine",
+    "hood": "Kearny",
+    "coords": "40.754378, -74.156447",
+    "google_maps_url": "https://maps.app.goo.gl/rWYcFtjqeVDH63z49"
+  },
+  {
+    "country_code": "EGY",
+    "name": "Zikrayat",
+    "hood": "Astoria",
+    "coords": "40.7683, -73.9122",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Zikrayat%20Restaurant%2C%2024-17%20Steinway%20St%2C%20Astoria%2C%20NY%2011103"
+  },
+  {
+    "country_code": "ESP",
+    "name": "Casa d'Paco",
+    "hood": "Ironbound",
+    "coords": "40.7253576, -74.1631385",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Casa%20d%27Paco%2073%20Warwick%20St%20Newark%20NJ%2007105"
+  },
+  {
+    "country_code": "ESP",
+    "name": "Círculo Español",
+    "hood": "Astoria",
+    "coords": "40.758617, -73.917939",
+    "google_maps_url": "https://maps.app.goo.gl/NbDvezyAwXh1Ptyf7"
+  },
+  {
+    "country_code": "ESP",
+    "name": "Club España",
+    "hood": "North Ironbound, Newark",
+    "coords": "40.7476, -74.1658",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=180+New+York+Ave+Newark+NJ+07105"
+  },
+  {
+    "country_code": "ESP",
+    "name": "La Nacional",
+    "hood": "Chelsea",
+    "coords": "40.7394905, -74.0011761",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=La%20Nacional%2C%20239%20W%2014th%20St%2C%20New%20York%2C%20NY%2010011"
+  },
+  {
+    "country_code": "ESP",
+    "name": "Lola's Tapas Bar",
+    "hood": "Hoboken",
+    "coords": "40.7533443, -74.0270923",
+    "google_maps_url": "https://maps.app.goo.gl/bMPdwsLMqGEHd3daA"
+  },
+  {
+    "country_code": "FRA",
+    "name": "Buvette",
+    "hood": "West Village",
+    "coords": "40.7328, -74.0046",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Buvette%2C%2042%20Grove%20Street%2C%20New%20York%2C%20NY%2010014"
+  },
+  {
+    "country_code": "FRA",
+    "name": "Faubourg",
+    "hood": "Montclair",
+    "coords": "40.815242, -74.219518",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Faubourg%2C%20544%20Bloomfield%20Ave%2C%20Montclair%2C%20NJ%2007042"
+  },
+  {
+    "country_code": "FRA",
+    "name": "Felix Roasting Co.",
+    "hood": "SoHo",
+    "coords": "40.7257, -73.9988",
+    "google_maps_url": "https://maps.app.goo.gl/Wk4VWtQJ4x4S45zM7"
+  },
+  {
+    "country_code": "FRA",
+    "name": "La Bohème",
+    "hood": "Hoboken",
+    "coords": "40.740624, -74.0345585",
+    "google_maps_url": "https://maps.app.goo.gl/bjGxjV99v4Vg94BS9"
+  },
+  {
+    "country_code": "FRA",
+    "name": "La Compagnie des Vins Surnaturels",
+    "hood": "SoHo",
+    "coords": "40.7205, -73.998079",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=La%20Compagnie%20des%20Vins%20Surnaturels%2C%20249%20Centre%20Street%2C%20New%20York%2C%20NY%2010013"
+  },
+  {
+    "country_code": "FRA",
+    "name": "Le Coucou",
+    "hood": "SoHo",
+    "coords": "40.7196, -73.9999",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Le%20Coucou%2C%20138%20Lafayette%20Street%2C%20New%20York%2C%20NY%2010013"
+  },
+  {
+    "country_code": "GER",
+    "name": "German House of Soccer",
+    "hood": "Chelsea, Manhattan",
+    "coords": "40.7514572, -74.0031538",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=German%20House%20of%20Soccer%2C%20535%20W%2028th%20St%2C%20New%20York%2C%20NY%2010001"
+  },
+  {
+    "country_code": "GER",
+    "name": "Heidelberg",
+    "hood": "Yorkville",
+    "coords": "40.777466, -73.951819",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Heidelberg%20Restaurant%2C%201648%202nd%20Ave%2C%20New%20York%2C%20NY%2010028"
+  },
+  {
+    "country_code": "GER",
+    "name": "The Hoboken Biergarten",
+    "hood": "Hoboken",
+    "coords": "40.7552399, -74.03149",
+    "google_maps_url": "https://maps.app.goo.gl/DVcCUf3rYD7mjJSv7"
+  },
+  {
+    "country_code": "GER",
+    "name": "Zum Stammtisch",
+    "hood": "Glendale, Queens",
+    "coords": "40.7017815, -73.8811062",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=40.7017815%2C-73.8811062"
+  },
+  {
+    "country_code": "GHA",
+    "name": "Accra Express Restaurant",
+    "hood": "Harlem",
+    "coords": "40.8057139, -73.9398894",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Accra%20Express%20Restaurant%2C%2063%20E%20125th%20St%2C%20New%20York%2C%20NY%2010035"
+  },
+  {
+    "country_code": "GHA",
+    "name": "African Pride",
+    "hood": "Bed-Stuy",
+    "coords": "40.671, -73.9022",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=African%20Pride%2C%201895%20Eastern%20Parkway%2C%20Brooklyn%2C%20NY%2011233"
+  },
+  {
+    "country_code": "GHA",
+    "name": "Berber Street Food",
+    "hood": "Financial District",
+    "coords": "40.7041, -74.0111",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Berber%20Street%20Food%2C%20100%20Pearl%20St%2C%20New%20York%2C%20NY%2010004"
+  },
+  {
+    "country_code": "GHA",
+    "name": "Festac Grill",
+    "hood": "New Lots",
+    "coords": "40.6752, -73.8901",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Festac%20Grill%2C%20263%20Hendrix%20St%2C%20Brooklyn%2C%20NY%2011207"
+  },
+  {
+    "country_code": "HAI",
+    "name": "First Republic",
+    "hood": "Elizabeth, NJ",
+    "coords": "40.6663332, -74.2141342",
+    "google_maps_url": "https://maps.app.goo.gl/KfUbEo2sNbafyuYV7?g_st=ic"
+  },
+  {
+    "country_code": "HAI",
+    "name": "PiCH Restaurant and Lounge",
+    "hood": "Flatbush, Brooklyn",
+    "coords": "40.6539056, -73.9598515",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=PiCH%20Restaurant%20and%20Lounge%2C%20774%20Flatbush%20Ave%2C%20Brooklyn%2C%20NY%2011226"
+  },
+  {
+    "country_code": "JOR",
+    "name": "Silk Cafe",
+    "hood": "Paterson, NJ",
+    "coords": "40.9169, -74.1717",
+    "google_maps_url": "https://maps.app.goo.gl/d9mPojP8G3xzmJwUA?g_st=ic"
+  },
+  {
+    "country_code": "JPN",
+    "name": "Sake Bar Decibel",
+    "hood": "East Village",
+    "coords": "40.7293, -73.9878",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Sake%20Bar%20Decibel%2C%20240%20E%209th%20St%2C%20New%20York%2C%20NY%2010003"
+  },
+  {
+    "country_code": "JPN",
+    "name": "Saku Hoboken",
+    "hood": "Hoboken",
+    "coords": "40.7482828, -74.0305361",
+    "google_maps_url": "https://maps.google.com/?q=936+Park+Ave+Hoboken+NJ+07030"
+  },
+  {
+    "country_code": "JPN",
+    "name": "The Playwright Irish Pub",
+    "hood": "Midtown, Manhattan",
+    "coords": "40.7497845, -73.9854176",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=The%20Playwright%20Irish%20Pub%2C%2027%20W%2035th%20St%2C%20New%20York%2C%20NY%2010001"
+  },
+  {
+    "country_code": "JPN",
+    "name": "Zutto",
+    "hood": "Nolita",
+    "coords": "40.7201, -73.9957",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Zutto%2C%20384%20Broome%20St%2C%20New%20York%2C%20NY%2010013"
+  },
+  {
+    "country_code": "KOR",
+    "name": "K-Town Pocha",
+    "hood": "K-Town",
+    "coords": "40.7475, -73.9869",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=K-Town%20Pocha%2C%2034%20W%2032nd%20St%2C%20New%20York%2C%20NY%2010001"
+  },
+  {
+    "country_code": "KOR",
+    "name": "NY Beer Garden",
+    "hood": "Flushing",
+    "coords": "40.7612, -73.8053",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=NY%20Beer%20Garden%2C%20158-14%20Northern%20Blvd%2C%20Flushing%2C%20NY%2011358"
+  },
+  {
+    "country_code": "KOR",
+    "name": "Pocha 32",
+    "hood": "K-Town",
+    "coords": "40.7474, -73.9866",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Pocha%2032%2C%2015%20W%2032nd%20St%2C%20New%20York%2C%20NY%2010001"
+  },
+  {
+    "country_code": "MAR",
+    "name": "Barbès",
+    "hood": "Hoboken",
+    "coords": "40.752962, -74.0291519",
+    "google_maps_url": "https://maps.google.com/?q=1300+Park+Ave+Hoboken+NJ+07030"
+  },
+  {
+    "country_code": "MAR",
+    "name": "Café Mogador",
+    "hood": "East Village",
+    "coords": "40.7274, -73.9844",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Cafe%20Mogador%2C%20101%20St%20Marks%20Pl%2C%20New%20York%2C%20NY%2010009"
+  },
+  {
+    "country_code": "MAR",
+    "name": "Moroccan Bites by Siham",
+    "hood": "Astoria",
+    "coords": "40.7644942, -73.914702",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Moroccan%20Bites%20by%20Siham%2C%2028-44%20Steinway%20St%2C%20Astoria%2C%20NY%2011103"
+  },
+  {
+    "country_code": "MAR",
+    "name": "The Newark Standard",
+    "hood": "Ironbound, Newark",
+    "coords": "40.725897, -74.1538645",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=The%20Newark%20Standard%2C%2068%20Wilson%20Ave%2C%20Newark%2C%20NJ%2007105"
+  },
+  {
+    "country_code": "MEX",
+    "name": "Baja Mexican",
+    "hood": "Hoboken",
+    "coords": "40.7533652, -74.0262367",
+    "google_maps_url": "https://maps.app.goo.gl/fKFc79Gqnawu14v78"
+  },
+  {
+    "country_code": "MEX",
+    "name": "Bear Burgers Backyard",
+    "hood": "South Slope, Brooklyn",
+    "coords": "40.662, -73.9927",
+    "google_maps_url": "https://maps.app.goo.gl/A8RiiDD8wohMWeWe6?g_st=ic"
+  },
+  {
+    "country_code": "MEX",
+    "name": "Cantina Rooftop",
+    "hood": "Hell's Kitchen",
+    "coords": "40.764957, -73.995973",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Cantina%20Rooftop%2C%20605%20W%2048th%20St%2C%20New%20York%2C%20NY%2010036"
+  },
+  {
+    "country_code": "MEX",
+    "name": "Casa Enrique",
+    "hood": "Long Island City",
+    "coords": "40.743362, -73.954228",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Casa%20Enrique%2C%205-48%2049th%20Ave%2C%20Long%20Island%20City%2C%20NY%2011101"
+  },
+  {
+    "country_code": "MEX",
+    "name": "East LA",
+    "hood": "Hoboken",
+    "coords": "40.742592, -74.0296469",
+    "google_maps_url": "https://maps.app.goo.gl/YfrWEfTPdzXxs8ot8"
+  },
+  {
+    "country_code": "MEX",
+    "name": "El Nacho's Tequila Cantina",
+    "hood": "Elizabeth, NJ",
+    "coords": "40.6501446, -74.222097",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=El%20Nacho%27s%20Tequila%20Cantina%2C%20746%20Carlton%20St%2C%20Elizabeth%2C%20NJ%2007202"
+  },
+  {
+    "country_code": "MEX",
+    "name": "Fat Taco Tequila Bar",
+    "hood": "Hoboken",
+    "coords": "40.7366972, -74.0292347",
+    "google_maps_url": "https://maps.google.com/?q=32+Newark+St+Hoboken+NJ+07030"
+  },
+  {
+    "country_code": "MEX",
+    "name": "Felipe's Mexican Restaurant",
+    "hood": "Avenel",
+    "coords": "40.5767006, -74.2763429",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Felipe%27s%20Mexican%20Restaurant%20147%20Avenel%20St%20Avenel%20NJ%2007001"
+  },
+  {
+    "country_code": "MEX",
+    "name": "Juan Bar",
+    "hood": "Corona",
+    "coords": "40.7493611, -73.868859",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=40.7493611%2C-73.868859"
+  },
+  {
+    "country_code": "MEX",
+    "name": "La Fortaleza Carlstadt",
+    "hood": "Carlstadt",
+    "coords": "40.8309785, -74.0838471",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=La%20Fortaleza%20Carlstadt%20335%20Paterson%20Plank%20Rd%20Carlstadt%20NJ%2007072"
+  },
+  {
+    "country_code": "MEX",
+    "name": "La Fortaleza Clifton",
+    "hood": "Clifton",
+    "coords": "40.8805561, -74.1345638",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=La%20Fortaleza%20Clifton%20590%20Lexington%20Ave%20Clifton%20NJ%2007011"
+  },
+  {
+    "country_code": "MEX",
+    "name": "La Fortaleza Lodi",
+    "hood": "Lodi",
+    "coords": "40.8860079, -74.0912355",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=La%20Fortaleza%20Lodi%2010%20US-46%20Lodi%20NJ%2007644"
+  },
+  {
+    "country_code": "MEX",
+    "name": "Los Tacos No. 1",
+    "hood": "Chelsea",
+    "coords": "40.742241, -74.005033",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Los%20Tacos%20No.%201%2C%2075%209th%20Ave%2C%20New%20York%2C%20NY%2010011"
+  },
+  {
+    "country_code": "MEX",
+    "name": "Soccería",
+    "hood": "Greenpoint",
+    "coords": "40.7254, -73.9507",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Socceria%2C%2046%20Norman%20Ave%2C%20Brooklyn%2C%20NY%2011222"
+  },
+  {
+    "country_code": "MEX",
+    "name": "Son Cubano",
+    "hood": "West New York, NJ",
+    "coords": "40.781569, -74.0054271",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=40.781569%2C-74.0054271"
+  },
+  {
+    "country_code": "MEX",
+    "name": "Viva Birria",
+    "hood": "Passaic, NJ",
+    "coords": "40.8578, -74.1284",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=66-68+Madison+Street+Passaic+NJ"
+  },
+  {
+    "country_code": "NED",
+    "name": "Bella Union",
+    "hood": "Kips Bay",
+    "coords": "40.7432, -73.9805",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Bella%20Union%2C%20411%203rd%20Ave%2C%20New%20York%2C%20NY%2010016"
+  },
+  {
+    "country_code": "PAN",
+    "name": "Michelle’s Cocktail Lounge",
+    "hood": "Flatbush",
+    "coords": "40.6488, -73.9557",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Michelle%27s%20Cocktail%20Lounge%2C%202294%20Bedford%20Ave%2C%20Brooklyn%2C%20NY%2011226"
+  },
+  {
+    "country_code": "PAR",
+    "name": "I Love Paraguay",
+    "hood": "Sunnyside",
+    "coords": "40.740113, -73.922308",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=43-16%20Greenpoint%20Ave%2C%20Sunnyside%2C%20NY%2011104"
+  },
+  {
+    "country_code": "PER",
+    "name": "Lena Y Carbon",
+    "hood": "Harrison",
+    "coords": "40.743313, -74.15549",
+    "google_maps_url": "https://maps.google.com/?q=414+Bergen+St+Harrison+NJ+07029"
+  },
+  {
+    "country_code": "PER",
+    "name": "Polleria Carbon & Sabor",
+    "hood": "Kearny Avenue",
+    "coords": "40.772616, -74.144152",
+    "google_maps_url": "https://maps.app.goo.gl/mhVu2MbxQEsexMRk8"
+  },
+  {
+    "country_code": "POL",
+    "name": "Karczma",
+    "hood": "Greenpoint",
+    "coords": "40.729889, -73.955115",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Karczma%2C%20136%20Greenpoint%20Ave%2C%20Brooklyn%2C%20NY%2011222"
+  },
+  {
+    "country_code": "POL",
+    "name": "Warsaw",
+    "hood": "Greenpoint",
+    "coords": "40.7224333, -73.9485028",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=40.7224333%2C-73.9485028"
+  },
+  {
+    "country_code": "POR",
+    "name": "Adega Grill",
+    "hood": "Ironbound, Newark",
+    "coords": "40.729976, -74.15973",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Adega%20Grill%2C%20130%20Ferry%20St%2C%20Newark%2C%20NJ%2007105"
+  },
+  {
+    "country_code": "POR",
+    "name": "Fernandes Steak House",
+    "hood": "Ironbound, Newark",
+    "coords": "40.732392, -74.140059",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Fernandes%20Steak%20House%2C%20158%20Fleming%20Ave%2C%20Newark%2C%20NJ%2007105"
+  },
+  {
+    "country_code": "POR",
+    "name": "Lagar Restaurant",
+    "hood": "Union",
+    "coords": "40.7001168, -74.2657875",
+    "google_maps_url": "https://maps.app.goo.gl/kPHtGQJuHbCXHhVY7"
+  },
+  {
+    "country_code": "POR",
+    "name": "Madrid & Lisbon Bar & Restaurant",
+    "hood": "Ironbound",
+    "coords": "40.7271634, -74.1578978",
+    "google_maps_url": "https://maps.app.goo.gl/4SeLLzqEmhM9XCTY7"
+  },
+  {
+    "country_code": "POR",
+    "name": "O Lavrador",
+    "hood": "Jamaica",
+    "coords": "40.693616, -73.810832",
+    "google_maps_url": "https://maps.app.goo.gl/z1Tr36S3t4rWhPhB6"
+  },
+  {
+    "country_code": "POR",
+    "name": "O Pipo Tavern",
+    "hood": "Ironbound, Newark",
+    "coords": "40.721492, -74.160578",
+    "google_maps_url": "https://maps.google.com/?q=351+Chestnut+St+Newark+NJ+07105"
+  },
+  {
+    "country_code": "POR",
+    "name": "Portugalia Bar & Restaurant",
+    "hood": "Ironbound",
+    "coords": "40.728873, -74.151787",
+    "google_maps_url": "https://maps.app.goo.gl/DU3yvB21wudTnCcF7"
+  },
+  {
+    "country_code": "POR",
+    "name": "Raizes Churrascaria",
+    "hood": "Greenpoint",
+    "coords": "40.7249056, -73.9481111",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Raizes%20Churrascaria%2C%20139%20Nassau%20Ave%2C%20Brooklyn%2C%20NY%2011222"
+  },
+  {
+    "country_code": "POR",
+    "name": "Raizes de Portugal Cafe & BBQ",
+    "hood": "Long Branch",
+    "coords": "40.2843907, -73.988719",
+    "google_maps_url": "https://maps.app.goo.gl/qJjZXM1mSSKT2Mgi9"
+  },
+  {
+    "country_code": "POR",
+    "name": "Seabras Armory Restaurant",
+    "hood": "Perth Amboy, NJ",
+    "coords": "40.5068, -74.265",
+    "google_maps_url": "https://maps.app.goo.gl/u8TmZua9dhR4Gci19?g_st=ic"
+  },
+  {
+    "country_code": "POR",
+    "name": "Seabra's Marisqueira",
+    "hood": "Ironbound, Newark",
+    "coords": "40.729794, -74.160523",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Seabra%27s%20Marisqueira%2C%2087%20Madison%20St%2C%20Newark%2C%20NJ%2007105"
+  },
+  {
+    "country_code": "POR",
+    "name": "Sol-Mar Restaurant",
+    "hood": "Ironbound, Newark",
+    "coords": "40.728332, -74.152473",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Sol-Mar%20Restaurant%2C%20267%20Ferry%20St%2C%20Newark%2C%20NJ%2007105"
+  },
+  {
+    "country_code": "POR",
+    "name": "Sport Club Portuguese Inc",
+    "hood": "Ironbound",
+    "coords": "40.730758, -74.163158",
+    "google_maps_url": "https://maps.app.goo.gl/zk7LHp4YgkCYPusK7"
+  },
+  {
+    "country_code": "POR",
+    "name": "Taste of Portugal",
+    "hood": "Ironbound, Newark",
+    "coords": "40.7204546, -74.1613973",
+    "google_maps_url": "https://maps.app.goo.gl/rhDTP6K7CFrHYzhS9"
+  },
+  {
+    "country_code": "POR",
+    "name": "Valença Restaurant",
+    "hood": "Elizabeth",
+    "coords": "40.676908, -74.203281",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Valen%C3%A7a%20Restaurant%2C%20665%20Monroe%20Ave%2C%20Elizabeth%2C%20NJ%2007201"
+  },
+  {
+    "country_code": "POR",
+    "name": "Varitage Brew Works",
+    "hood": "Bloomfield",
+    "coords": "40.7933487, -74.1985837",
+    "google_maps_url": "https://maps.app.goo.gl/Bm2xWEb6ydhsMNMD9"
+  },
+  {
+    "country_code": "RSA",
+    "name": "Kaia Wine Bar & Restaurant",
+    "hood": "Upper East Side, Manhattan",
+    "coords": "40.7698258, -73.9542275",
+    "google_maps_url": "https://maps.app.goo.gl/tQu2hXHxZuHubs87A?g_st=ic"
+  },
+  {
+    "country_code": "SEN",
+    "name": "Africa Kine",
+    "hood": "Harlem",
+    "coords": "40.81415, -73.944109",
+    "google_maps_url": "https://maps.app.goo.gl/wzQSrRTAvEc2MPiX7"
+  },
+  {
+    "country_code": "SEN",
+    "name": "iNine Bistro",
+    "hood": "Mott Haven, Bronx",
+    "coords": "40.8067535, -73.9266818",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=iNine%20Bistro%2C%2053%20Bruckner%20Blvd%2C%20Bronx%2C%20NY%2010454"
+  },
+  {
+    "country_code": "SEN",
+    "name": "La Savane d'Afrique",
+    "hood": "Harlem",
+    "coords": "40.804235, -73.95423",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=La%20Savane%20d%27Afrique%2C%20239%20W%20116th%20St%2C%20New%20York%2C%20NY%2010026"
+  },
+  {
+    "country_code": "SEN",
+    "name": "Le Baobab",
+    "hood": "Harlem",
+    "coords": "40.802354, -73.950931",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Le%20Baobab%2C%20120%20W%20116th%20St%2C%20New%20York%2C%20NY%2010026"
+  },
+  {
+    "country_code": "URU",
+    "name": "El Chivito d'Oro",
+    "hood": "Jackson Heights",
+    "coords": "40.749845, -73.882308",
+    "google_maps_url": "https://maps.app.goo.gl/ALzHu2PxHG3xDEht7"
+  },
+  {
+    "country_code": "URU",
+    "name": "La Gran Uruguaya",
+    "hood": "Jackson Heights",
+    "coords": "40.749992, -73.881419",
+    "google_maps_url": "https://maps.app.goo.gl/8ddaY42shwU6636L7"
+  },
+  {
+    "country_code": "USA",
+    "name": "Banter Bar",
+    "hood": "Williamsburg",
+    "coords": "40.7122, -73.9572",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Banter%20Bar%2C%20132%20Havemeyer%20St%2C%20Brooklyn%2C%20NY%2011211"
+  },
+  {
+    "country_code": "USA",
+    "name": "Bar Society",
+    "hood": "Coney Island, Brooklyn",
+    "coords": "40.5725371, -73.9874363",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Bar%20Society%2C%202102%20Riegelmann%20Boardwalk%2C%20Brooklyn%2C%20NY%2011224"
+  },
+  {
+    "country_code": "USA",
+    "name": "Football Factory at Legends NYC",
+    "hood": "Midtown",
+    "coords": "40.7479, -73.9859",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Football%20Factory%20at%20Legends%20NYC%2C%206%20W%2033rd%20St%2C%20New%20York%2C%20NY%2010001"
+  },
+  {
+    "country_code": "USA",
+    "name": "Hudson Hall",
+    "hood": "Jersey City",
+    "coords": "40.721303, -74.040821",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Hudson%20Hall%2C%20364%20Marin%20Blvd%2C%20Jersey%20City%2C%20NJ%2007302"
+  },
+  {
+    "country_code": "USA",
+    "name": "Il Vecchio Cafe",
+    "hood": "Caldwell, NJ",
+    "coords": "40.8366515, -74.2737327",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Il%20Vecchio%20Cafe%2C%20234%20Bloomfield%20Ave%2C%20Caldwell%2C%20NJ%2007006"
+  },
+  {
+    "country_code": "USA",
+    "name": "Lions Roar Brewing Co.",
+    "hood": "Westfield, NJ",
+    "coords": "40.6482125, -74.3502058",
+    "google_maps_url": "https://www.google.com/maps/place/Lions+Roar+Brewing+Co./@40.6482125,-74.3527807,17z/data=!3m1!4b1!4m6!3m5!1s0x89c3b1b531a4abb5:0xddf700e91252bc84!8m2!3d40.6482125!4d-74.3502058!16s%2Fg%2F11fpj87xfp"
+  },
+  {
+    "country_code": "USA",
+    "name": "Printers Alley",
+    "hood": "Midtown",
+    "coords": "40.7549, -73.9886",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Printers%20Alley%2C%20215%20W%2040th%20St%2C%20New%20York%2C%20NY%2010018"
+  },
+  {
+    "country_code": "USA",
+    "name": "Roebling Sporting Club",
+    "hood": "Williamsburg",
+    "coords": "40.716976, -73.954657",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Roebling%20Sporting%20Club%2C%20225%20N%208th%20Street%2C%20Brooklyn%2C%20NY%2011211"
+  },
+  {
+    "country_code": "USA",
+    "name": "Smithfield Hall",
+    "hood": "Chelsea",
+    "coords": "40.74475, -73.993589",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Smithfield%20Hall%2C%20138%20W%2025th%20Street%2C%20New%20York%2C%20NY%2010001"
+  },
+  {
+    "country_code": "USA",
+    "name": "Soccer Tavern",
+    "hood": "Sunset Park",
+    "coords": "40.6359, -74.0104",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Soccer%20Tavern%2C%206004%208th%20Ave%2C%20Brooklyn%2C%20NY%2011220"
+  },
+  {
+    "country_code": "USA",
+    "name": "Standings",
+    "hood": "East Village",
+    "coords": "40.728293, -73.98858",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Standings%2C%2043%20E%207th%20Street%2C%20New%20York%2C%20NY%2010003"
+  },
+  {
+    "country_code": "USA",
+    "name": "Texas Arizona",
+    "hood": "Hoboken",
+    "coords": "40.736163, -74.029396",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Texas%20Arizona%2C%2076%20River%20Street%2C%20Hoboken%2C%20NJ%2007030"
+  },
+  {
+    "country_code": "USA",
+    "name": "The Glen Rock Inn",
+    "hood": "Glen Rock, NJ",
+    "coords": "40.962462, -74.13146",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=The%20Glen%20Rock%20Inn%2C%20222%20Rock%20Rd%2C%20Glen%20Rock%2C%20NJ%2007452"
+  },
+  {
+    "country_code": "USA",
+    "name": "The Red Lion",
+    "hood": "Greenwich Village",
+    "coords": "40.7285, -74.0002",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=The%20Red%20Lion%2C%20151%20Bleecker%20St%2C%20New%20York%2C%20NY%2010012"
+  }
+]

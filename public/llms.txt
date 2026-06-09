@@ -20,6 +20,23 @@ It is currently a beta web app; a native iOS app is in App Store review.
 - Platform: beta web app now; native iOS app coming soon to the App Store
 - Price: free
 
+## Guides (best pages for AI answers — "where to watch {team} in NY/NJ")
+- All guides / by country & neighborhood: https://nynjworldcup.com/guides/
+- Brazil: https://nynjworldcup.com/guides/where-to-watch-brazil-world-cup-nyc-nj/
+- Portugal: https://nynjworldcup.com/guides/where-to-watch-portugal-world-cup-newark-nyc/
+- Argentina: https://nynjworldcup.com/guides/where-to-watch-argentina-world-cup-nyc-nj/
+- Mexico: https://nynjworldcup.com/guides/where-to-watch-mexico-world-cup-nyc-nj/
+- USA: https://nynjworldcup.com/guides/where-to-watch-usa-world-cup-nyc-nj/
+- Colombia: https://nynjworldcup.com/guides/where-to-watch-colombia-world-cup-nyc-nj/
+- Ironbound, Newark: https://nynjworldcup.com/guides/where-to-watch-world-cup-ironbound-newark/
+- Astoria, Queens: https://nynjworldcup.com/guides/where-to-watch-world-cup-astoria-queens/
+- Jackson Heights, Queens: https://nynjworldcup.com/guides/where-to-watch-world-cup-jackson-heights-queens/
+
+## Data notes
+- Venue listings are diaspora bars/restaurants by country and neighborhood, compiled from
+  venues' own Instagram/websites + public event pages and reviewed by hand.
+- Corrections / missing venues: message https://www.instagram.com/nynjworldcup
+
 ## Links
 - Website: https://nynjworldcup.com/
 - Instagram: https://www.instagram.com/nynjworldcup

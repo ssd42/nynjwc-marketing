@@ -1240,6 +1240,7 @@ function Footer() {
             >
               Instagram
             </a>
+            <a href="/guides/" style={{ color: '#d6cfc4', textDecoration: 'none' }}>Guides</a>
             <a href="#" style={{ color: '#d6cfc4', textDecoration: 'none' }}>Privacy</a>
             <a href="#" style={{ color: '#d6cfc4', textDecoration: 'none' }}>Terms</a>
             <a href="#" style={{ color: '#d6cfc4', textDecoration: 'none' }}>Press kit</a>
