@@ -2361,10 +2361,15 @@ export function SubmitPage() {
   const [mode, setMode] = useState<'event' | 'venue'>('event');
   const [tab, setTab] = useState<'form' | 'json' | 'review' | 'enrich'>('form');
 
-  // Mode (Event vs Venue) only picks which submission form/JSON tab you see.
-  // The Review queue (both types) and the Enrich queue (events-only) ignore it,
-  // but the mode row stays visible so the layout doesn't shift when those tabs
-  // open. Picking a mode there drops you back into that mode's Form tab.
+  // Top-level sections are Submit / Enrich / Review queue — three peer
+  // workflows. Enrich (events-only) and the Review queue (both types) are
+  // global, so they own the page on their own. Submit is the only section that
+  // branches further: pick Event vs Venue, then Form vs JSON. Those sub-tabs
+  // only render under Submit, so the Event/Venue choice never appears to
+  // "own" the global queues.
+  const section: 'submit' | 'enrich' | 'review' =
+    tab === 'enrich' ? 'enrich' : tab === 'review' ? 'review' : 'submit';
+
   const switchMode = (next: 'event' | 'venue') => {
     setMode(next);
     setTab('form');
@@ -2402,35 +2407,46 @@ export function SubmitPage() {
         <p style={{ ...s.sub, textAlign: 'right' }}>
           Signed in as <strong>{session.label}</strong> ({session.role})
         </p>
+        {/* Top-level sections — peers. */}
         <div style={s.tabRow}>
-          <button type="button" style={tabStyle(mode === 'event')} onClick={() => switchMode('event')}>
-            Event
-          </button>
-          <button type="button" style={tabStyle(mode === 'venue')} onClick={() => switchMode('venue')}>
-            Venue
-          </button>
-        </div>
-        <div style={s.tabRow}>
-          <button type="button" style={tabStyle(tab === 'form')} onClick={() => setTab('form')}>
-            Form
-          </button>
-          <button type="button" style={tabStyle(tab === 'json')} onClick={() => setTab('json')}>
-            JSON
+          <button type="button" style={tabStyle(section === 'submit')} onClick={() => setTab('form')}>
+            Submit
           </button>
           {/* Enrich is events-only but open to every role. */}
-          <button type="button" style={tabStyle(tab === 'enrich')} onClick={() => setTab('enrich')}>
+          <button type="button" style={tabStyle(section === 'enrich')} onClick={() => setTab('enrich')}>
             Enrich
           </button>
           {session.role === 'admin' && (
             <button
               type="button"
-              style={tabStyle(tab === 'review')}
+              style={tabStyle(section === 'review')}
               onClick={() => setTab('review')}
             >
               Review queue
             </button>
           )}
         </div>
+        {/* Sub-tabs belong to Submit only. */}
+        {section === 'submit' && (
+          <>
+            <div style={s.tabRow}>
+              <button type="button" style={tabStyle(mode === 'event')} onClick={() => switchMode('event')}>
+                Event
+              </button>
+              <button type="button" style={tabStyle(mode === 'venue')} onClick={() => switchMode('venue')}>
+                Venue
+              </button>
+            </div>
+            <div style={s.tabRow}>
+              <button type="button" style={tabStyle(tab === 'form')} onClick={() => setTab('form')}>
+                Form
+              </button>
+              <button type="button" style={tabStyle(tab === 'json')} onClick={() => setTab('json')}>
+                JSON
+              </button>
+            </div>
+          </>
+        )}
         {tab === 'enrich' ? (
           <EnrichQueue code={code} />
         ) : tab === 'review' && session.role === 'admin' ? (
