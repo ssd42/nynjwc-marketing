@@ -2362,9 +2362,9 @@ export function SubmitPage() {
   const [tab, setTab] = useState<'form' | 'json' | 'review' | 'enrich'>('form');
 
   // Mode (Event vs Venue) only picks which submission form/JSON tab you see.
-  // The Review queue (both types) and the Enrich queue (events-only) don't use
-  // it, so the mode tabs are hidden while either is open. Switching mode returns
-  // to the Form tab.
+  // The Review queue (both types) and the Enrich queue (events-only) ignore it,
+  // but the mode row stays visible so the layout doesn't shift when those tabs
+  // open. Picking a mode there drops you back into that mode's Form tab.
   const switchMode = (next: 'event' | 'venue') => {
     setMode(next);
     setTab('form');
@@ -2402,16 +2402,14 @@ export function SubmitPage() {
         <p style={{ ...s.sub, textAlign: 'right' }}>
           Signed in as <strong>{session.label}</strong> ({session.role})
         </p>
-        {tab !== 'review' && tab !== 'enrich' && (
-          <div style={s.tabRow}>
-            <button type="button" style={tabStyle(mode === 'event')} onClick={() => switchMode('event')}>
-              Event
-            </button>
-            <button type="button" style={tabStyle(mode === 'venue')} onClick={() => switchMode('venue')}>
-              Venue
-            </button>
-          </div>
-        )}
+        <div style={s.tabRow}>
+          <button type="button" style={tabStyle(mode === 'event')} onClick={() => switchMode('event')}>
+            Event
+          </button>
+          <button type="button" style={tabStyle(mode === 'venue')} onClick={() => switchMode('venue')}>
+            Venue
+          </button>
+        </div>
         <div style={s.tabRow}>
           <button type="button" style={tabStyle(tab === 'form')} onClick={() => setTab('form')}>
             Form

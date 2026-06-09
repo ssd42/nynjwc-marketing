@@ -168,6 +168,8 @@ h1.title{font-size:clamp(34px,6vw,52px);line-height:1.04;letter-spacing:-.01em;m
 .cta:hover{transform:translateY(-1px)}
 .updated{font-size:13px;color:var(--soft);margin-top:16px}
 .wrap{padding-top:8px;padding-bottom:64px}
+.lede{margin:6px 0 4px}
+.lede p{font-size:18.5px;line-height:1.62;color:#34302a;margin:0 0 14px;max-width:62ch}
 h2{font-size:25px;letter-spacing:-.01em;margin:42px 0 4px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 h2 .count{font:700 13px/1 ui-sans-serif;color:var(--accent);
   background:color-mix(in srgb,var(--accent) 11%,#fff);border-radius:999px;padding:5px 9px}
@@ -344,7 +346,12 @@ function renderGuide(g) {
   const jsonld = [breadcrumb(g.h1, canonical), faqLd(g.faq)];
   if (venues.length) jsonld.push(venueItemList(venues, g.h1));
 
+  const lede = [g.intro, g.hoodColor]
+    .filter(Boolean)
+    .map((p) => `<p>${esc(p)}</p>`)
+    .join('');
   const main =
+    (lede ? `<div class="lede">${lede}</div>` : '') +
     venuesHtml +
     `<h2 class="serif">How we verify</h2><div class="callout"><span class="ic">✓</span><div>${esc(VERIFY_NOTE)}</div></div>` +
     faqHtml(g.faq) +
@@ -400,6 +407,7 @@ function renderHub() {
   ];
 
   const main =
+    `<div class="lede"><p>${esc(HUB.intro)}</p></div>` +
     `<h2 class="serif">By country</h2><div class="more">${countries.map(card).join('')}</div>` +
     `<h2 class="serif">By neighborhood</h2><div class="more">${hoods.map(card).join('')}</div>`;
 
