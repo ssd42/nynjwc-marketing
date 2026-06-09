@@ -15,19 +15,25 @@ export const SITE = {
 };
 
 export const COUNTRY_META = {
-  BRA: { name: 'Brazil', flag: '🇧🇷' },
-  POR: { name: 'Portugal', flag: '🇵🇹' },
-  ARG: { name: 'Argentina', flag: '🇦🇷' },
-  MEX: { name: 'Mexico', flag: '🇲🇽' },
-  USA: { name: 'United States', flag: '🇺🇸' },
-  COL: { name: 'Colombia', flag: '🇨🇴' },
+  BRA: { name: 'Brazil', flag: '🇧🇷', accent: '#009C3B' },
+  POR: { name: 'Portugal', flag: '🇵🇹', accent: '#C8102E' },
+  ARG: { name: 'Argentina', flag: '🇦🇷', accent: '#4A90D9' },
+  MEX: { name: 'Mexico', flag: '🇲🇽', accent: '#006847' },
+  USA: { name: 'United States', flag: '🇺🇸', accent: '#3C3B6E' },
+  COL: { name: 'Colombia', flag: '🇨🇴', accent: '#2A4BA0' },
 };
+
+// Accent + emblem for non-country pages.
+export const HOOD_ACCENT = '#B5532A';
+export const HUB_ACCENT = '#1a1612';
 
 // The "how we verify" line shown on every guide (plain-language trust signal).
 export const VERIFY_NOTE =
-  'Listings are compiled from each venue’s own Instagram and website plus public ' +
-  'event pages, and reviewed by hand. Bars get added, removed, and corrected as ' +
-  'the tournament approaches — see a mistake or a missing spot? Message us on Instagram.';
+  'We prioritize venues that have publicly shown soccer — national-team watch parties and ' +
+  'World Cup / Copa América / Euro posts — plus established diaspora community spots, ' +
+  'compiled from each venue’s own Instagram and website and public event pages, and ' +
+  'reviewed by hand. Match-specific details can change, so check the live map and the ' +
+  'venue’s socials before you go. See a mistake or a missing spot? Message us on Instagram.';
 
 export const GUIDES = [
   // ── Country guides ────────────────────────────────────────────────────────
