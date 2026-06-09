@@ -67,6 +67,7 @@ for (const code of COUNTRY_ORDER) {
       lat: v.lat,
       lng: v.lng,
       googleMapsUrl: null,
+      socialsUrl: null,
       // null on purpose: the preview cards carry real venue names, so a
       // stock photo would misrepresent the actual business. This renders
       // the app's real generated placeholder; real photos flow through

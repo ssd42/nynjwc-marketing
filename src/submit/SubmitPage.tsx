@@ -2,10 +2,11 @@
  * Gated submission tool — the unadvertised /submit.html.
  *
  * Two steps: a code gate, then a workspace that toggles between two modes —
- * Event and Venue — each with a Form tab, a JSON (AI-assisted) tab, and an
- * admin-only Review queue. Anyone with a valid code can submit; an
- * `admin`-role code unlocks the queues. The code is held in React state only
- * (never localStorage) and sent on every request as the `X-Event-Code` header.
+ * Event and Venue — each with a Form tab and a JSON (AI-assisted) tab, plus a
+ * single admin-only Review queue shared across both types. Anyone with a valid
+ * code can submit; an `admin`-role code unlocks the queue. The code is held in
+ * React state only (never localStorage) and sent on every request as the
+ * `X-Event-Code` header.
  *
  * Submissions land server-side as status='pending' and stay out of the app
  * until approved here. Events live in the events table; approved venues are
@@ -42,6 +43,7 @@ type PendingEvent = {
   venueId: string | null;
   venueName: string | null;
   venueHood: string | null;
+  venueMapUrl: string | null;
   imageUrl: string | null;
   sourceUrl: string | null;
   isFree: boolean;
@@ -65,6 +67,14 @@ type PendingVenue = {
 };
 
 type UploadUrlResponse = { uploadUrl: string; publicUrl: string; key: string };
+
+type BatchSkipped = {
+  index: number;
+  reason: 'invalid' | 'duplicate';
+  errors?: string[] | null;
+  matchedEventId?: string | null;
+};
+type BatchResult = { created: string[]; skipped: BatchSkipped[] };
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
@@ -111,6 +121,16 @@ async function api<T>(path: string, code: string, init?: RequestInit): Promise<T
 /** Convert a <input type="datetime-local"> value to an ISO-8601 UTC string. */
 function toIso(local: string): string {
   return new Date(local).toISOString();
+}
+
+/** Inverse of toIso: an ISO string → a local `datetime-local` input value. */
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours(),
+  )}:${pad(d.getMinutes())}`;
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────
@@ -784,7 +804,12 @@ function JsonEventForm({ code }: { code: string }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [doneId, setDoneId] = useState('');
+  const [batchResult, setBatchResult] = useState<BatchResult | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Cheap detection so the submit button can label itself; the authoritative
+  // array/object branch happens in submit() after a real JSON.parse.
+  const isBatch = useMemo(() => jsonText.trim().startsWith('['), [jsonText]);
 
   // Live-parse jsonText so the user can test the venueMapUrl in a new tab
   // before committing. Silent on parse errors — the live preview is a
@@ -806,6 +831,7 @@ function JsonEventForm({ code }: { code: string }) {
     setJsonText('');
     setImageUrl('');
     setDoneId('');
+    setBatchResult(null);
     setError('');
   };
 
@@ -858,25 +884,47 @@ function JsonEventForm({ code }: { code: string }) {
     if (busy) return;
     setError('');
 
-    let payload: Record<string, unknown>;
+    let payload: unknown;
     try {
-      payload = JSON.parse(jsonText) as Record<string, unknown>;
+      payload = JSON.parse(jsonText);
     } catch {
       return setError('Invalid JSON — check for missing commas, quotes, or brackets.');
     }
-    if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
-      return setError('JSON must be an object.');
+
+    // An array → batch import: every row lands as pending; the server reports
+    // which were created vs skipped (invalid / duplicate). Per-event images are
+    // added later in the Enrich tab, so the single image picker is ignored here.
+    if (Array.isArray(payload)) {
+      if (payload.length === 0) return setError('The array is empty.');
+      setBusy(true);
+      try {
+        const result = await api<BatchResult>('/v1/events/submissions/batch', code, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        setBatchResult(result);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : 'Could not reach the server.');
+      } finally {
+        setBusy(false);
+      }
+      return;
     }
-    const problem = validateEventPayload(payload);
+
+    if (typeof payload !== 'object' || payload === null) {
+      return setError('JSON must be an event object, or an array of events for a batch.');
+    }
+    const obj = payload as Record<string, unknown>;
+    const problem = validateEventPayload(obj);
     if (problem) return setError(problem);
     // Uploaded image always wins over any imageUrl the AI may have invented.
-    if (imageUrl) payload.imageUrl = imageUrl;
+    if (imageUrl) obj.imageUrl = imageUrl;
 
     setBusy(true);
     try {
       const result = await api<{ id: string }>('/v1/events/submissions', code, {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify(obj),
       });
       setDoneId(result.id);
     } catch (err) {
@@ -885,6 +933,53 @@ function JsonEventForm({ code }: { code: string }) {
       setBusy(false);
     }
   };
+
+  if (batchResult) {
+    const invalid = batchResult.skipped.filter((sk) => sk.reason === 'invalid');
+    const dupes = batchResult.skipped.filter((sk) => sk.reason === 'duplicate');
+    return (
+      <div style={s.card}>
+        <h1 style={s.h1}>Batch imported</h1>
+        <p style={s.sub}>
+          Created {batchResult.created.length} · skipped {invalid.length} invalid ·{' '}
+          {dupes.length} duplicate. Imported events are pending — add images and fix
+          details in the <strong>Enrich</strong> tab, then an admin approves them.
+        </p>
+        {invalid.length > 0 && (
+          <>
+            <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600 }}>
+              Invalid ({invalid.length})
+            </div>
+            <ul style={s.notes}>
+              {invalid.map((sk) => (
+                <li key={sk.index}>
+                  Row {sk.index}: {(sk.errors ?? []).join('; ') || 'validation failed'}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        {dupes.length > 0 && (
+          <>
+            <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600 }}>
+              Duplicates ({dupes.length})
+            </div>
+            <ul style={s.notes}>
+              {dupes.map((sk) => (
+                <li key={sk.index}>
+                  Row {sk.index}: already exists
+                  {sk.matchedEventId ? ` (${sk.matchedEventId})` : ''}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        <button style={s.button} type="button" onClick={reset}>
+          Import another
+        </button>
+      </div>
+    );
+  }
 
   if (doneId) {
     return (
@@ -903,10 +998,13 @@ function JsonEventForm({ code }: { code: string }) {
 
   return (
     <form style={s.card} onSubmit={submit}>
-      <h1 style={s.h1}>Add an event (JSON)</h1>
+      <h1 style={s.h1}>Add events (JSON)</h1>
       <p style={s.sub}>
         Drop a flyer image into an AI with the reference below, paste the JSON it returns
-        here, upload the same image, and submit.
+        here, upload the same image, and submit. Paste a <strong>single object</strong> for
+        one event, or an <strong>array</strong> <code>[ … ]</code> to batch-import many at
+        once (dupes and invalid rows are skipped and reported; per-event images get added
+        later in the Enrich tab).
       </p>
 
       <div
@@ -1061,15 +1159,37 @@ function JsonEventForm({ code }: { code: string }) {
 
       {error && <div style={s.errorBox}>{error}</div>}
       <button style={s.button} type="submit" disabled={busy || uploading}>
-        {busy ? 'Submitting…' : 'Submit event'}
+        {busy ? 'Submitting…' : isBatch ? 'Import batch' : 'Submit event'}
       </button>
     </form>
   );
 }
 
 // ── Admin review queue ──────────────────────────────────────────────────────
+// One unified queue across both submission types. Events and venue submissions
+// live in separate tables / endpoints, so we fetch both, tag each row with its
+// type, and merge oldest-first. Approve / Reject routes to the matching
+// endpoint based on the row's type.
+type ReviewItem =
+  | ({ itemType: 'event' } & PendingEvent)
+  | ({ itemType: 'venue' } & PendingVenue);
+
+function badgeStyle(type: 'event' | 'venue'): CSSProperties {
+  return {
+    display: 'inline-block',
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: '#fff',
+    background: type === 'event' ? COLORS.ink : '#2f6b4f',
+    borderRadius: 999,
+    padding: '2px 8px',
+  };
+}
+
 function ReviewQueue({ code }: { code: string }) {
-  const [events, setEvents] = useState<PendingEvent[]>([]);
+  const [items, setItems] = useState<ReviewItem[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState('');
@@ -1078,7 +1198,17 @@ function ReviewQueue({ code }: { code: string }) {
     setLoading(true);
     setError('');
     try {
-      setEvents(await api<PendingEvent[]>('/v1/events/submissions/pending', code));
+      const [events, venues] = await Promise.all([
+        api<PendingEvent[]>('/v1/events/submissions/pending', code),
+        api<PendingVenue[]>('/v1/venues/submissions/pending', code),
+      ]);
+      const merged: ReviewItem[] = [
+        ...events.map((e) => ({ itemType: 'event' as const, ...e })),
+        ...venues.map((v) => ({ itemType: 'venue' as const, ...v })),
+      ];
+      // Oldest first, matching the order each queue used on its own.
+      merged.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      setItems(merged);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load the queue.');
     } finally {
@@ -1090,13 +1220,15 @@ function ReviewQueue({ code }: { code: string }) {
     void load();
   }, [load]);
 
-  const moderate = async (id: string, action: 'approve' | 'reject') => {
+  const moderate = async (item: ReviewItem, action: 'approve' | 'reject') => {
     if (actingId) return;
-    setActingId(id);
+    setActingId(item.id);
     setError('');
+    const base =
+      item.itemType === 'event' ? '/v1/events/submissions' : '/v1/venues/submissions';
     try {
-      await api(`/v1/events/submissions/${id}/${action}`, code, { method: 'POST' });
-      setEvents((prev) => prev.filter((e) => e.id !== id));
+      await api(`${base}/${item.id}/${action}`, code, { method: 'POST' });
+      setItems((prev) => prev.filter((it) => it.id !== item.id));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Action failed.');
     } finally {
@@ -1116,14 +1248,14 @@ function ReviewQueue({ code }: { code: string }) {
     <div style={s.card}>
       <h1 style={s.h1}>Review queue</h1>
       <p style={s.sub}>
-        {events.length === 0
+        {items.length === 0
           ? 'Nothing pending — all caught up.'
-          : `${events.length} event${events.length === 1 ? '' : 's'} awaiting review.`}
+          : `${items.length} item${items.length === 1 ? '' : 's'} awaiting review.`}
       </p>
       {error && <div style={s.errorBox}>{error}</div>}
-      {events.map((ev) => (
+      {items.map((item) => (
         <div
-          key={ev.id}
+          key={`${item.itemType}:${item.id}`}
           style={{
             border: `1px solid ${COLORS.line}`,
             borderRadius: 8,
@@ -1133,17 +1265,17 @@ function ReviewQueue({ code }: { code: string }) {
             gap: 12,
           }}
         >
-          {ev.imageUrl && (
-            ev.sourceUrl ? (
+          {item.itemType === 'event' && item.imageUrl ? (
+            item.sourceUrl ? (
               <a
-                href={ev.sourceUrl}
+                href={item.sourceUrl}
                 target="_blank"
                 rel="noreferrer"
                 title="Open original post"
                 style={{ flexShrink: 0, lineHeight: 0 }}
               >
                 <img
-                  src={ev.imageUrl}
+                  src={item.imageUrl}
                   alt=""
                   style={{
                     width: 72,
@@ -1156,65 +1288,108 @@ function ReviewQueue({ code }: { code: string }) {
               </a>
             ) : (
               <img
-                src={ev.imageUrl}
+                src={item.imageUrl}
                 alt=""
-                style={{
-                  width: 72,
-                  height: 96,
-                  objectFit: 'cover',
-                  borderRadius: 6,
-                  flexShrink: 0,
-                }}
+                style={{ width: 72, height: 96, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}
               />
             )
-          )}
+          ) : item.itemType === 'venue' && item.imageUrl ? (
+            <img
+              src={item.imageUrl}
+              alt=""
+              style={{ width: 72, height: 96, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}
+            />
+          ) : null}
+
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>{ev.title}</div>
-            <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}>
-              {ev.kind} · {new Date(ev.startsAt).toLocaleString()}
-            </div>
-            <div style={{ fontSize: 12, color: COLORS.muted }}>
-              {ev.venueName ?? ev.venueId ?? '—'}
-              {ev.venueHood ? `, ${ev.venueHood}` : ''}
-              {ev.submittedBy ? ` · submitted by ${ev.submittedBy}` : ''}
-            </div>
-            {ev.sourceUrl && (
-              <a
-                href={ev.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  marginTop: 8,
-                  padding: '6px 12px',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: COLORS.ink,
-                  background: '#fff',
-                  border: `1px solid ${COLORS.line}`,
-                  borderRadius: 999,
-                  textDecoration: 'none',
-                }}
-              >
-                See the original post ↗
-              </a>
+            <span style={badgeStyle(item.itemType)}>
+              {item.itemType === 'event' ? 'Event' : 'Venue'}
+            </span>
+            {item.itemType === 'event' ? (
+              <>
+                <div style={{ fontWeight: 600, fontSize: 14, marginTop: 6 }}>{item.title}</div>
+                <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}>
+                  {item.kind} · {new Date(item.startsAt).toLocaleString()}
+                </div>
+                <div style={{ fontSize: 12, color: COLORS.muted }}>
+                  {item.venueName ?? item.venueId ?? '—'}
+                  {item.venueHood ? `, ${item.venueHood}` : ''}
+                  {item.submittedBy ? ` · submitted by ${item.submittedBy}` : ''}
+                </div>
+                {item.sourceUrl && (
+                  <a
+                    href={item.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      marginTop: 8,
+                      padding: '6px 12px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: COLORS.ink,
+                      background: '#fff',
+                      border: `1px solid ${COLORS.line}`,
+                      borderRadius: 999,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    See the original post ↗
+                  </a>
+                )}
+              </>
+            ) : (
+              <>
+                <div style={{ fontWeight: 600, fontSize: 14, marginTop: 6 }}>{item.name}</div>
+                <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}>
+                  {item.countryCode} · {item.type}
+                </div>
+                <div style={{ fontSize: 12, color: COLORS.muted }}>
+                  {item.hood} · {item.lat.toFixed(4)}, {item.lng.toFixed(4)}
+                  {item.submittedBy ? ` · submitted by ${item.submittedBy}` : ''}
+                </div>
+                {(item.googleMapsUrl || item.sourceUrl) && (
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                    {item.googleMapsUrl && (
+                      <a
+                        href={item.googleMapsUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: 12, fontWeight: 600, color: COLORS.ink, background: '#fff', border: `1px solid ${COLORS.line}`, borderRadius: 999, padding: '5px 10px', textDecoration: 'none' }}
+                      >
+                        Map ↗
+                      </a>
+                    )}
+                    {item.sourceUrl && (
+                      <a
+                        href={item.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: 12, fontWeight: 600, color: COLORS.ink, background: '#fff', border: `1px solid ${COLORS.line}`, borderRadius: 999, padding: '5px 10px', textDecoration: 'none' }}
+                      >
+                        Source ↗
+                      </a>
+                    )}
+                  </div>
+                )}
+              </>
             )}
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
               <button
                 type="button"
                 style={{ ...tabStyle(true), flex: 1 }}
-                disabled={actingId === ev.id}
-                onClick={() => moderate(ev.id, 'approve')}
+                disabled={actingId === item.id}
+                onClick={() => moderate(item, 'approve')}
               >
                 Approve
               </button>
               <button
                 type="button"
                 style={{ ...tabStyle(false), flex: 1, color: COLORS.danger }}
-                disabled={actingId === ev.id}
-                onClick={() => moderate(ev.id, 'reject')}
+                disabled={actingId === item.id}
+                onClick={() => moderate(item, 'reject')}
               >
                 Reject
               </button>
@@ -1723,18 +1898,24 @@ function JsonVenueForm({ code }: { code: string }) {
   );
 }
 
-// ── Admin venue review queue ────────────────────────────────────────────────
-function VenueReviewQueue({ code }: { code: string }) {
-  const [venues, setVenues] = useState<PendingVenue[]>([]);
+// ── Enrich queue (pending events) ───────────────────────────────────────────
+// Open to any code-holder. Pulls every pending (unreviewed) event, image-missing
+// first, and lets you edit fields, link a known venue, and add an image — all of
+// which keep the event pending. An admin still approves it in the Review queue.
+function EnrichQueue({ code }: { code: string }) {
+  const [events, setEvents] = useState<PendingEvent[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [actingId, setActingId] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      setVenues(await api<PendingVenue[]>('/v1/venues/submissions/pending', code));
+      const list = await api<PendingEvent[]>('/v1/events/submissions/pending', code);
+      // Image-missing first; stable sort keeps the server's oldest-first order
+      // within each group.
+      list.sort((a, b) => (a.imageUrl ? 1 : 0) - (b.imageUrl ? 1 : 0));
+      setEvents(list);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load the queue.');
     } finally {
@@ -1746,18 +1927,12 @@ function VenueReviewQueue({ code }: { code: string }) {
     void load();
   }, [load]);
 
-  const moderate = async (id: string, action: 'approve' | 'reject') => {
-    if (actingId) return;
-    setActingId(id);
-    setError('');
-    try {
-      await api(`/v1/venues/submissions/${id}/${action}`, code, { method: 'POST' });
-      setVenues((prev) => prev.filter((v) => v.id !== id));
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Action failed.');
-    } finally {
-      setActingId('');
-    }
+  const onUpdated = (updated: PendingEvent) => {
+    setEvents((prev) => {
+      const next = prev.map((e) => (e.id === updated.id ? updated : e));
+      next.sort((a, b) => (a.imageUrl ? 1 : 0) - (b.imageUrl ? 1 : 0));
+      return next;
+    });
   };
 
   if (loading) {
@@ -1770,79 +1945,411 @@ function VenueReviewQueue({ code }: { code: string }) {
 
   return (
     <div style={s.card}>
-      <h1 style={s.h1}>Venue review queue</h1>
+      <h1 style={s.h1}>Enrich</h1>
       <p style={s.sub}>
-        {venues.length === 0
-          ? 'Nothing pending — all caught up.'
-          : `${venues.length} venue${venues.length === 1 ? '' : 's'} awaiting review.`}
+        {events.length === 0
+          ? 'No pending events to enrich — all caught up.'
+          : `${events.length} pending event${events.length === 1 ? '' : 's'}. Add images, fix details, or link a known venue. Each still needs admin approval in the Review queue.`}
       </p>
       {error && <div style={s.errorBox}>{error}</div>}
-      {venues.map((v) => (
-        <div
-          key={v.id}
-          style={{ border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: 12, marginTop: 10, display: 'flex', gap: 12 }}
-        >
-          {v.imageUrl && (
-            <img
-              src={v.imageUrl}
-              alt=""
-              style={{ width: 72, height: 96, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}
-            />
-          )}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>{v.name}</div>
-            <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}>
-              {v.countryCode} · {v.type}
-            </div>
-            <div style={{ fontSize: 12, color: COLORS.muted }}>
-              {v.hood} · {v.lat.toFixed(4)}, {v.lng.toFixed(4)}
-              {v.submittedBy ? ` · submitted by ${v.submittedBy}` : ''}
-            </div>
-            {(v.googleMapsUrl || v.sourceUrl) && (
-              <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                {v.googleMapsUrl && (
-                  <a
-                    href={v.googleMapsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ fontSize: 12, fontWeight: 600, color: COLORS.ink, background: '#fff', border: `1px solid ${COLORS.line}`, borderRadius: 999, padding: '5px 10px', textDecoration: 'none' }}
-                  >
-                    Map ↗
-                  </a>
-                )}
-                {v.sourceUrl && (
-                  <a
-                    href={v.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ fontSize: 12, fontWeight: 600, color: COLORS.ink, background: '#fff', border: `1px solid ${COLORS.line}`, borderRadius: 999, padding: '5px 10px', textDecoration: 'none' }}
-                  >
-                    Source ↗
-                  </a>
-                )}
-              </div>
-            )}
-            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-              <button
-                type="button"
-                style={{ ...tabStyle(true), flex: 1 }}
-                disabled={actingId === v.id}
-                onClick={() => moderate(v.id, 'approve')}
-              >
-                Approve
-              </button>
-              <button
-                type="button"
-                style={{ ...tabStyle(false), flex: 1, color: COLORS.danger }}
-                disabled={actingId === v.id}
-                onClick={() => moderate(v.id, 'reject')}
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        </div>
+      {events.map((ev) => (
+        <EnrichCard key={ev.id} code={code} event={ev} onUpdated={onUpdated} />
       ))}
+    </div>
+  );
+}
+
+function EnrichCard({
+  code,
+  event,
+  onUpdated,
+}: {
+  code: string;
+  event: PendingEvent;
+  onUpdated: (e: PendingEvent) => void;
+}) {
+  const [title, setTitle] = useState(event.title);
+  const [kind, setKind] = useState(event.kind);
+  const [startsAt, setStartsAt] = useState(toLocalInput(event.startsAt));
+  const [endsAt, setEndsAt] = useState(event.endsAt ? toLocalInput(event.endsAt) : '');
+  const [countryCode, setCountryCode] = useState(event.countryCode ?? '');
+  const [venueId, setVenueId] = useState(event.venueId ?? '');
+  const [venueName, setVenueName] = useState(event.venueName ?? '');
+  const [venueHood, setVenueHood] = useState(event.venueHood ?? '');
+  const [venueMapUrl, setVenueMapUrl] = useState(event.venueMapUrl ?? '');
+  const [sourceUrl, setSourceUrl] = useState(event.sourceUrl ?? '');
+  const [isFree, setIsFree] = useState(event.isFree);
+  const [imageUrl, setImageUrl] = useState(event.imageUrl ?? '');
+
+  const [venueQuery, setVenueQuery] = useState('');
+  const [venueResults, setVenueResults] = useState<Venue[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
+
+  const searchVenues = async (q: string) => {
+    setVenueQuery(q);
+    if (q.trim().length < 2) {
+      setVenueResults([]);
+      return;
+    }
+    try {
+      setVenueResults(
+        await api<Venue[]>(`/v1/venues?q=${encodeURIComponent(q.trim())}`, code),
+      );
+    } catch {
+      setVenueResults([]);
+    }
+  };
+
+  const linkVenue = (v: Venue) => {
+    setVenueId(v.id);
+    setVenueName(v.name);
+    setVenueHood(v.hood);
+    setVenueQuery('');
+    setVenueResults([]);
+  };
+
+  const onPickFile = async (file: File | null) => {
+    if (!file) return;
+    setError('');
+    if (!file.type.startsWith('image/')) {
+      setError('Only image files (jpg, png, webp, gif).');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setError('Image must be 10 MB or smaller.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const presigned = await api<UploadUrlResponse>(
+        '/v1/events/submissions/upload-url',
+        code,
+        { method: 'POST', body: JSON.stringify({ contentType: file.type }) },
+      );
+      const putResp = await fetch(presigned.uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      if (!putResp.ok) throw new Error(`S3 upload failed (${putResp.status}).`);
+      setImageUrl(presigned.publicUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const save = async () => {
+    if (saving) return;
+    if (!startsAt) {
+      setError('A start date/time is required.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    setSaved(false);
+    try {
+      const body = {
+        title: title.trim(),
+        kind,
+        startsAt: toIso(startsAt),
+        endsAt: endsAt ? toIso(endsAt) : null,
+        countryCode: countryCode.trim() ? countryCode.trim().toUpperCase() : null,
+        venueId: venueId || null,
+        venueName: venueName.trim() || null,
+        venueHood: venueHood.trim() || null,
+        venueMapUrl: venueMapUrl.trim() || null,
+        sourceUrl: sourceUrl.trim() || null,
+        imageUrl: imageUrl.trim() || null,
+        isFree,
+      };
+      const updated = await api<PendingEvent>(
+        `/v1/events/submissions/${event.id}`,
+        code,
+        { method: 'PATCH', body: JSON.stringify(body) },
+      );
+      onUpdated(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Save failed.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const fieldStyle: CSSProperties = { ...s.input, marginTop: 4 };
+
+  return (
+    <div
+      style={{
+        border: `1px solid ${COLORS.line}`,
+        borderRadius: 8,
+        padding: 12,
+        marginTop: 12,
+      }}
+    >
+      <div style={{ display: 'flex', gap: 12 }}>
+        {/* Image slot */}
+        <div style={{ flexShrink: 0, width: 96 }}>
+          {imageUrl ? (
+            <>
+              <img
+                src={imageUrl}
+                alt=""
+                style={{
+                  width: 96,
+                  height: 128,
+                  objectFit: 'cover',
+                  borderRadius: 6,
+                  border: `1px solid ${COLORS.line}`,
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setImageUrl('')}
+                style={{
+                  fontSize: 12,
+                  color: COLORS.danger,
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px 0 0',
+                  cursor: 'pointer',
+                }}
+              >
+                Remove
+              </button>
+            </>
+          ) : (
+            <label
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 96,
+                height: 128,
+                borderRadius: 6,
+                border: `1px dashed ${COLORS.line}`,
+                background: '#fafafa',
+                color: COLORS.muted,
+                fontSize: 11,
+                textAlign: 'center',
+                cursor: 'pointer',
+                padding: 4,
+              }}
+            >
+              {uploading ? 'Uploading…' : 'Add image'}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploading}
+                onChange={(e) => void onPickFile(e.target.files?.[0] ?? null)}
+                style={{ display: 'none' }}
+              />
+            </label>
+          )}
+        </div>
+
+        {/* Fields */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 11, color: COLORS.muted }}>
+            {event.submittedBy ? `submitted by ${event.submittedBy}` : 'imported'}
+            {!event.imageUrl && ' · needs image'}
+          </div>
+
+          <input
+            style={fieldStyle}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Title"
+          />
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select
+              style={{ ...fieldStyle, flex: 1 }}
+              value={kind}
+              onChange={(e) => setKind(e.target.value)}
+            >
+              {KINDS.map((k) => (
+                <option key={k.value} value={k.value}>
+                  {k.label}
+                </option>
+              ))}
+            </select>
+            <input
+              style={{ ...fieldStyle, width: 70 }}
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value)}
+              placeholder="CC"
+              maxLength={3}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <label style={{ flex: 1, fontSize: 11, color: COLORS.muted }}>
+              Starts
+              <input
+                style={fieldStyle}
+                type="datetime-local"
+                value={startsAt}
+                onChange={(e) => setStartsAt(e.target.value)}
+              />
+            </label>
+            <label style={{ flex: 1, fontSize: 11, color: COLORS.muted }}>
+              Ends (optional)
+              <input
+                style={fieldStyle}
+                type="datetime-local"
+                value={endsAt}
+                onChange={(e) => setEndsAt(e.target.value)}
+              />
+            </label>
+          </div>
+
+          {/* Venue: free-text + link a known venue */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              style={{ ...fieldStyle, flex: 1 }}
+              value={venueName}
+              onChange={(e) => {
+                setVenueName(e.target.value);
+                setVenueId(''); // editing the name detaches any linked venue
+              }}
+              placeholder="Venue name"
+            />
+            <input
+              style={{ ...fieldStyle, flex: 1 }}
+              value={venueHood}
+              onChange={(e) => setVenueHood(e.target.value)}
+              placeholder="Neighborhood"
+            />
+          </div>
+          {venueId ? (
+            <div style={{ fontSize: 11, color: COLORS.ink, marginTop: 4 }}>
+              ✓ Linked to known venue{' '}
+              <button
+                type="button"
+                onClick={() => setVenueId('')}
+                style={{
+                  fontSize: 11,
+                  color: COLORS.danger,
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                unlink
+              </button>
+            </div>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              <input
+                style={{ ...fieldStyle, fontSize: 12 }}
+                value={venueQuery}
+                onChange={(e) => void searchVenues(e.target.value)}
+                placeholder="🔎 link a known venue by name…"
+              />
+              {venueResults.length > 0 && (
+                <div
+                  style={{
+                    border: `1px solid ${COLORS.line}`,
+                    borderRadius: 6,
+                    marginTop: 2,
+                    background: '#fff',
+                    maxHeight: 160,
+                    overflowY: 'auto',
+                  }}
+                >
+                  {venueResults.map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => linkVenue(v)}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '6px 10px',
+                        background: 'none',
+                        border: 'none',
+                        borderBottom: `1px solid ${COLORS.line}`,
+                        cursor: 'pointer',
+                        fontSize: 12,
+                      }}
+                    >
+                      {v.name}
+                      {v.hood ? <span style={{ color: COLORS.muted }}> · {v.hood}</span> : null}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <input
+            style={fieldStyle}
+            value={sourceUrl}
+            onChange={(e) => setSourceUrl(e.target.value)}
+            placeholder="Source URL (research link)"
+          />
+          <input
+            style={fieldStyle}
+            value={venueMapUrl}
+            onChange={(e) => setVenueMapUrl(e.target.value)}
+            placeholder="Venue map URL"
+          />
+
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              marginTop: 8,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={isFree}
+              onChange={(e) => setIsFree(e.target.checked)}
+            />
+            Free event
+          </label>
+
+          {sourceUrl && (
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'inline-block',
+                marginTop: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                color: COLORS.ink,
+              }}
+            >
+              Open source to research ↗
+            </a>
+          )}
+
+          {error && <div style={s.errorBox}>{error}</div>}
+          <button
+            type="button"
+            style={{ ...s.button, marginTop: 10 }}
+            disabled={saving || uploading}
+            onClick={() => void save()}
+          >
+            {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save (stays pending)'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1852,10 +2359,12 @@ export function SubmitPage() {
   const [code, setCode] = useState('');
   const [session, setSession] = useState<Session | null>(null);
   const [mode, setMode] = useState<'event' | 'venue'>('event');
-  const [tab, setTab] = useState<'form' | 'json' | 'review'>('form');
+  const [tab, setTab] = useState<'form' | 'json' | 'review' | 'enrich'>('form');
 
-  // Switching mode always returns to the Form tab — the Review tab is a
-  // different queue per mode, so carrying the tab across would be confusing.
+  // Mode (Event vs Venue) only picks which submission form/JSON tab you see.
+  // The Review queue (both types) and the Enrich queue (events-only) don't use
+  // it, so the mode tabs are hidden while either is open. Switching mode returns
+  // to the Form tab.
   const switchMode = (next: 'event' | 'venue') => {
     setMode(next);
     setTab('form');
@@ -1893,20 +2402,26 @@ export function SubmitPage() {
         <p style={{ ...s.sub, textAlign: 'right' }}>
           Signed in as <strong>{session.label}</strong> ({session.role})
         </p>
-        <div style={s.tabRow}>
-          <button type="button" style={tabStyle(mode === 'event')} onClick={() => switchMode('event')}>
-            Event
-          </button>
-          <button type="button" style={tabStyle(mode === 'venue')} onClick={() => switchMode('venue')}>
-            Venue
-          </button>
-        </div>
+        {tab !== 'review' && tab !== 'enrich' && (
+          <div style={s.tabRow}>
+            <button type="button" style={tabStyle(mode === 'event')} onClick={() => switchMode('event')}>
+              Event
+            </button>
+            <button type="button" style={tabStyle(mode === 'venue')} onClick={() => switchMode('venue')}>
+              Venue
+            </button>
+          </div>
+        )}
         <div style={s.tabRow}>
           <button type="button" style={tabStyle(tab === 'form')} onClick={() => setTab('form')}>
             Form
           </button>
           <button type="button" style={tabStyle(tab === 'json')} onClick={() => setTab('json')}>
             JSON
+          </button>
+          {/* Enrich is events-only but open to every role. */}
+          <button type="button" style={tabStyle(tab === 'enrich')} onClick={() => setTab('enrich')}>
+            Enrich
           </button>
           {session.role === 'admin' && (
             <button
@@ -1918,16 +2433,12 @@ export function SubmitPage() {
             </button>
           )}
         </div>
-        {mode === 'venue' ? (
-          tab === 'review' && session.role === 'admin' ? (
-            <VenueReviewQueue code={code} />
-          ) : tab === 'json' ? (
-            <JsonVenueForm code={code} />
-          ) : (
-            <AddVenueForm code={code} />
-          )
+        {tab === 'enrich' ? (
+          <EnrichQueue code={code} />
         ) : tab === 'review' && session.role === 'admin' ? (
           <ReviewQueue code={code} />
+        ) : mode === 'venue' ? (
+          tab === 'json' ? <JsonVenueForm code={code} /> : <AddVenueForm code={code} />
         ) : tab === 'json' ? (
           <JsonEventForm code={code} />
         ) : (

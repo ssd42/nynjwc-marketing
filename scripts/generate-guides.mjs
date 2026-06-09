@@ -102,7 +102,23 @@ footer.site{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;fo
 footer.site a{color:var(--muted)}
 `;
 
-function head({ title, description, canonical, jsonld }) {
+// PostHog (same project/host as the app — src/main.tsx). The guide pages are
+// otherwise JS-free; this snippet auto-captures a $pageview with $referrer /
+// $referring_domain + UTM params, which is what surfaces AI/search referrals
+// (chatgpt.com, perplexity.ai, google, bing). `section: 'guides'` tags every
+// event so guide traffic is filterable.
+const PH_KEY = 'phc_CQ9UJEmmzhe586scbjKrxUtRD3yy8obAhiYdtwZZtkFA';
+const PH_HOST = 'https://us.i.posthog.com';
+function analytics(props) {
+  const reg = JSON.stringify({ section: 'guides', ...props });
+  return `<script>
+!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+posthog.init('${PH_KEY}',{api_host:'${PH_HOST}',defaults:'2025-05-24',person_profiles:'identified_only'});
+posthog.register(${reg});
+</script>`;
+}
+
+function head({ title, description, canonical, jsonld, analytics: ph }) {
   const ld = jsonld
     .map((o) => `<script type="application/ld+json">${JSON.stringify(o)}</script>`)
     .join('\n');
@@ -125,6 +141,7 @@ function head({ title, description, canonical, jsonld }) {
 <link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
 <style>${CSS}</style>
 ${ld}
+${ph || ''}
 </head>`;
 }
 
@@ -231,7 +248,13 @@ function renderGuide(g) {
   if (venues.length) jsonld.push(venueItemList(venues, g.h1));
 
   const html =
-    head({ title: g.metaTitle, description: g.metaDescription, canonical, jsonld }) +
+    head({
+      title: g.metaTitle,
+      description: g.metaDescription,
+      canonical,
+      jsonld,
+      analytics: analytics({ guide: g.slug }),
+    }) +
     chromeOpen() +
     `<h1>${esc(g.h1)}</h1>` +
     `<p class="updated">Last updated ${prettyDate(TODAY)} · maintained by NYNJ World Cup</p>` +
@@ -282,7 +305,13 @@ function renderHub() {
   ];
 
   const html =
-    head({ title: HUB.metaTitle, description: HUB.metaDescription, canonical, jsonld }) +
+    head({
+      title: HUB.metaTitle,
+      description: HUB.metaDescription,
+      canonical,
+      jsonld,
+      analytics: analytics({ guide: 'hub' }),
+    }) +
     chromeOpen() +
     `<h1>${esc(HUB.h1)}</h1>` +
     `<p class="updated">Last updated ${prettyDate(TODAY)}</p>` +
