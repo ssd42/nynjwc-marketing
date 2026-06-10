@@ -14,7 +14,7 @@
  * nynjwc-backend/app/api/{event_submissions,venue_submissions}.py.
  */
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 
 const API_BASE: string = import.meta.env.VITE_API_BASE_URL ?? '';
 
@@ -77,6 +77,22 @@ type BatchSkipped = {
 type BatchResult = { created: string[]; skipped: BatchSkipped[] };
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+// Pull the first image out of a paste/drag payload. Screenshots arrive as an
+// `image/*` item (⌘V from the screenshot tool / a copied image); returns null
+// for text-only pastes so the caller can let those behave normally.
+function imageFromClipboard(data: DataTransfer): File | null {
+  for (const item of Array.from(data.items)) {
+    if (item.kind === 'file' && item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) return file;
+    }
+  }
+  for (const file of Array.from(data.files)) {
+    if (file.type.startsWith('image/')) return file;
+  }
+  return null;
+}
 
 const KINDS = [
   { value: 'watch', label: 'Watch party' },
@@ -308,7 +324,8 @@ const VENUE_JSON_TEMPLATE = `{
   "lat": 40.7320,
   "lng": -74.1620,
   "googleMapsUrl": "https://maps.google.com/?q=...",
-  "sourceUrl": "https://www.instagram.com/p/..."
+  "sourceUrl": "https://www.instagram.com/p/...",
+  "socialsUrl": "https://www.instagram.com/thevenue/"
 }`;
 
 const VENUE_JSON_FIELD_NOTES: string[] = [
@@ -317,6 +334,7 @@ const VENUE_JSON_FIELD_NOTES: string[] = [
   'lat / lng: required decimal degrees. In Google Maps, right-click the spot → click the “lat, lng” at the top to copy them',
   'googleMapsUrl: link to the place — optional',
   'sourceUrl: original listing / Instagram post — optional',
+  'socialsUrl: the venue’s own Instagram / Facebook page — optional',
   'Omit imageUrl — upload the photo below and it is merged in automatically',
   'Omit photoSlug / displayOrder — assigned automatically when an admin approves',
 ];
@@ -406,6 +424,132 @@ function Gate({ onUnlock }: { onUnlock: (code: string, session: Session) => void
           {busy ? 'Checking…' : 'Continue'}
         </button>
       </form>
+    </div>
+  );
+}
+
+// ── Image upload (click-to-browse or paste a screenshot) ────────────────────
+// The empty box is focusable: click it, then ⌘V / Ctrl+V drops a clipboard
+// screenshot straight in — the fast path for event flyers. The "choose a file"
+// link is the classic picker. `compact` is the narrow 96×128 slot used in the
+// Enrich queue; the default is a full-width box for the submit forms.
+function ImageUpload({
+  imageUrl,
+  uploading,
+  onFile,
+  onClear,
+  compact = false,
+}: {
+  imageUrl: string;
+  uploading: boolean;
+  onFile: (file: File | null) => void;
+  onClear: () => void;
+  compact?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  if (imageUrl) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: compact ? 'column' : 'row',
+          gap: compact ? 0 : 12,
+          alignItems: 'flex-start',
+          marginTop: 4,
+        }}
+      >
+        <img
+          src={imageUrl}
+          alt="uploaded preview"
+          style={{
+            width: 96,
+            height: compact ? 128 : undefined,
+            maxHeight: compact ? undefined : 160,
+            objectFit: 'cover',
+            borderRadius: compact ? 6 : 8,
+            border: `1px solid ${COLORS.line}`,
+          }}
+        />
+        <button
+          type="button"
+          onClick={onClear}
+          style={{
+            fontSize: 12,
+            color: COLORS.danger,
+            background: 'none',
+            border: 'none',
+            padding: compact ? '4px 0 0' : 0,
+            cursor: 'pointer',
+          }}
+        >
+          Remove
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onPaste={(e) => {
+        const file = imageFromClipboard(e.clipboardData);
+        if (!file) return; // let text-only pastes behave normally
+        e.preventDefault();
+        void onFile(file);
+      }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        gap: 2,
+        width: compact ? 96 : undefined,
+        height: compact ? 128 : undefined,
+        minHeight: compact ? undefined : 60,
+        marginTop: 4,
+        padding: compact ? 4 : 10,
+        borderRadius: 6,
+        border: `1px dashed ${COLORS.line}`,
+        background: '#fafafa',
+        color: COLORS.muted,
+        fontSize: compact ? 11 : 13,
+        lineHeight: 1.3,
+        cursor: 'text',
+      }}
+    >
+      {uploading ? (
+        'Uploading…'
+      ) : (
+        <>
+          <span>Paste a screenshot{compact ? '' : ' here'} (⌘V)</span>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            style={{
+              fontSize: compact ? 11 : 12,
+              color: COLORS.muted,
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              textDecoration: 'underline',
+              cursor: 'pointer',
+            }}
+          >
+            {compact ? 'or file' : 'or choose a file'}
+          </button>
+        </>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        disabled={uploading}
+        onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
+        style={{ display: 'none' }}
+      />
     </div>
   );
 }
@@ -733,48 +877,15 @@ function AddEventForm({ code }: { code: string }) {
         <label htmlFor="isFree">Free entry</label>
       </div>
 
-      <label style={s.label} htmlFor="image">
+      <label style={s.label}>
         Image <span style={{ color: COLORS.muted, fontWeight: 400 }}>(jpg, png, webp, gif · up to 10 MB)</span>
       </label>
-      {imageUrl ? (
-        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginTop: 4 }}>
-          <img
-            src={imageUrl}
-            alt="uploaded preview"
-            style={{
-              width: 96,
-              maxHeight: 160,
-              objectFit: 'cover',
-              borderRadius: 8,
-              border: `1px solid ${COLORS.line}`,
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => setImageUrl('')}
-            style={{
-              fontSize: 12,
-              color: COLORS.danger,
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-            }}
-          >
-            Remove
-          </button>
-        </div>
-      ) : (
-        <input
-          id="image"
-          style={s.input}
-          type="file"
-          accept="image/*"
-          disabled={uploading}
-          onChange={(e) => void onPickFile(e.target.files?.[0] ?? null)}
-        />
-      )}
-      {uploading && <p style={{ fontSize: 12, color: COLORS.muted, marginTop: 6 }}>Uploading…</p>}
+      <ImageUpload
+        imageUrl={imageUrl}
+        uploading={uploading}
+        onFile={onPickFile}
+        onClear={() => setImageUrl('')}
+      />
 
       <label style={s.label} htmlFor="sourceUrl">
         Source URL <span style={{ color: COLORS.muted, fontWeight: 400 }}>(Instagram post, optional)</span>
@@ -1073,53 +1184,18 @@ function JsonEventForm({ code }: { code: string }) {
         ))}
       </div>
 
-      <label style={s.label} htmlFor="jsonImage">
+      <label style={s.label}>
         Image{' '}
         <span style={{ color: COLORS.muted, fontWeight: 400 }}>
           (jpg, png, webp, gif · up to 10 MB)
         </span>
       </label>
-      {imageUrl ? (
-        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginTop: 4 }}>
-          <img
-            src={imageUrl}
-            alt="uploaded preview"
-            style={{
-              width: 96,
-              maxHeight: 160,
-              objectFit: 'cover',
-              borderRadius: 8,
-              border: `1px solid ${COLORS.line}`,
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => setImageUrl('')}
-            style={{
-              fontSize: 12,
-              color: COLORS.danger,
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-            }}
-          >
-            Remove
-          </button>
-        </div>
-      ) : (
-        <input
-          id="jsonImage"
-          style={s.input}
-          type="file"
-          accept="image/*"
-          disabled={uploading}
-          onChange={(e) => void onPickFile(e.target.files?.[0] ?? null)}
-        />
-      )}
-      {uploading && (
-        <p style={{ fontSize: 12, color: COLORS.muted, marginTop: 6 }}>Uploading…</p>
-      )}
+      <ImageUpload
+        imageUrl={imageUrl}
+        uploading={uploading}
+        onFile={onPickFile}
+        onClear={() => setImageUrl('')}
+      />
 
       <label style={s.label} htmlFor="jsonBody">
         JSON
@@ -1411,6 +1487,7 @@ function AddVenueForm({ code }: { code: string }) {
   const [lng, setLng] = useState('');
   const [googleMapsUrl, setGoogleMapsUrl] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
+  const [socialsUrl, setSocialsUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
 
@@ -1433,6 +1510,7 @@ function AddVenueForm({ code }: { code: string }) {
     setLng('');
     setGoogleMapsUrl('');
     setSourceUrl('');
+    setSocialsUrl('');
     setImageUrl('');
     setDoneId('');
   };
@@ -1498,6 +1576,7 @@ function AddVenueForm({ code }: { code: string }) {
     };
     if (googleMapsUrl.trim()) payload.googleMapsUrl = googleMapsUrl.trim();
     if (sourceUrl.trim()) payload.sourceUrl = sourceUrl.trim();
+    if (socialsUrl.trim()) payload.socialsUrl = socialsUrl.trim();
     if (imageUrl) payload.imageUrl = imageUrl;
 
     setBusy(true);
@@ -1671,6 +1750,18 @@ function AddVenueForm({ code }: { code: string }) {
         placeholder="https://www.instagram.com/p/…"
         value={sourceUrl}
         onChange={(e) => setSourceUrl(e.target.value)}
+      />
+
+      <label style={s.label} htmlFor="vSocialsUrl">
+        Socials URL <span style={{ color: COLORS.muted, fontWeight: 400 }}>(venue’s Instagram / Facebook, optional)</span>
+      </label>
+      <input
+        id="vSocialsUrl"
+        style={s.input}
+        type="url"
+        placeholder="https://www.instagram.com/thevenue/"
+        value={socialsUrl}
+        onChange={(e) => setSocialsUrl(e.target.value)}
       />
 
       {error && <div style={s.errorBox}>{error}</div>}
@@ -2096,63 +2187,13 @@ function EnrichCard({
       <div style={{ display: 'flex', gap: 12 }}>
         {/* Image slot */}
         <div style={{ flexShrink: 0, width: 96 }}>
-          {imageUrl ? (
-            <>
-              <img
-                src={imageUrl}
-                alt=""
-                style={{
-                  width: 96,
-                  height: 128,
-                  objectFit: 'cover',
-                  borderRadius: 6,
-                  border: `1px solid ${COLORS.line}`,
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setImageUrl('')}
-                style={{
-                  fontSize: 12,
-                  color: COLORS.danger,
-                  background: 'none',
-                  border: 'none',
-                  padding: '4px 0 0',
-                  cursor: 'pointer',
-                }}
-              >
-                Remove
-              </button>
-            </>
-          ) : (
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 96,
-                height: 128,
-                borderRadius: 6,
-                border: `1px dashed ${COLORS.line}`,
-                background: '#fafafa',
-                color: COLORS.muted,
-                fontSize: 11,
-                textAlign: 'center',
-                cursor: 'pointer',
-                padding: 4,
-              }}
-            >
-              {uploading ? 'Uploading…' : 'Add image'}
-              <input
-                type="file"
-                accept="image/*"
-                disabled={uploading}
-                onChange={(e) => void onPickFile(e.target.files?.[0] ?? null)}
-                style={{ display: 'none' }}
-              />
-            </label>
-          )}
+          <ImageUpload
+            compact
+            imageUrl={imageUrl}
+            uploading={uploading}
+            onFile={onPickFile}
+            onClear={() => setImageUrl('')}
+          />
         </div>
 
         {/* Fields */}
