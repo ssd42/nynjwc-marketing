@@ -1704,41 +1704,15 @@ function AddVenueForm({ code }: { code: string }) {
         onChange={(e) => setGoogleMapsUrl(e.target.value)}
       />
 
-      <label style={s.label} htmlFor="vImage">
+      <label style={s.label}>
         Photo <span style={{ color: COLORS.muted, fontWeight: 400 }}>(jpg, png, webp, gif · up to 10 MB · optional)</span>
       </label>
-      {imageUrl ? (
-        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginTop: 4 }}>
-          <img
-            src={imageUrl}
-            alt="uploaded preview"
-            style={{
-              width: 96,
-              maxHeight: 160,
-              objectFit: 'cover',
-              borderRadius: 8,
-              border: `1px solid ${COLORS.line}`,
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => setImageUrl('')}
-            style={{ fontSize: 12, color: COLORS.danger, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-          >
-            Remove
-          </button>
-        </div>
-      ) : (
-        <input
-          id="vImage"
-          style={s.input}
-          type="file"
-          accept="image/*"
-          disabled={uploading}
-          onChange={(e) => void onPickFile(e.target.files?.[0] ?? null)}
-        />
-      )}
-      {uploading && <p style={{ fontSize: 12, color: COLORS.muted, marginTop: 6 }}>Uploading…</p>}
+      <ImageUpload
+        imageUrl={imageUrl}
+        uploading={uploading}
+        onFile={onPickFile}
+        onClear={() => setImageUrl('')}
+      />
 
       <label style={s.label} htmlFor="vSourceUrl">
         Source URL <span style={{ color: COLORS.muted, fontWeight: 400 }}>(listing / Instagram, optional)</span>
@@ -1939,36 +1913,16 @@ function JsonVenueForm({ code }: { code: string }) {
         ))}
       </div>
 
-      <label style={s.label} htmlFor="vJsonImage">
+      <label style={s.label}>
         Photo{' '}
         <span style={{ color: COLORS.muted, fontWeight: 400 }}>(jpg, png, webp, gif · up to 10 MB · optional)</span>
       </label>
-      {imageUrl ? (
-        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginTop: 4 }}>
-          <img
-            src={imageUrl}
-            alt="uploaded preview"
-            style={{ width: 96, maxHeight: 160, objectFit: 'cover', borderRadius: 8, border: `1px solid ${COLORS.line}` }}
-          />
-          <button
-            type="button"
-            onClick={() => setImageUrl('')}
-            style={{ fontSize: 12, color: COLORS.danger, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-          >
-            Remove
-          </button>
-        </div>
-      ) : (
-        <input
-          id="vJsonImage"
-          style={s.input}
-          type="file"
-          accept="image/*"
-          disabled={uploading}
-          onChange={(e) => void onPickFile(e.target.files?.[0] ?? null)}
-        />
-      )}
-      {uploading && <p style={{ fontSize: 12, color: COLORS.muted, marginTop: 6 }}>Uploading…</p>}
+      <ImageUpload
+        imageUrl={imageUrl}
+        uploading={uploading}
+        onFile={onPickFile}
+        onClear={() => setImageUrl('')}
+      />
 
       <label style={s.label} htmlFor="vJsonBody">
         JSON
