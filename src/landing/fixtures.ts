@@ -249,7 +249,6 @@ export const savedVenues: Venue[] = [
 
 export const notifPrefs: NotificationPrefs = {
   matchStart: true,
-  goals: true,
   newSpots: true,
 };
 

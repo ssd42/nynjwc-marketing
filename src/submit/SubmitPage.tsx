@@ -1477,6 +1477,141 @@ function ReviewQueue({ code }: { code: string }) {
   );
 }
 
+// ── Admin notifications outbox ───────────────────────────────────────────────
+// "New spot near you" pushes don't send on approval — they queue here and go
+// out together at 11am ET as one digest per person. Admins can see what's
+// waiting (and roughly how many people each reaches) and cancel before it sends.
+interface OutboxEntry {
+  id: string;
+  venueName: string;
+  status: string;
+  reach: number | null;
+  createdAt: string;
+  sentAt: string | null;
+}
+interface OutboxView {
+  pending: OutboxEntry[];
+  sent: OutboxEntry[];
+}
+
+function NotificationsOutbox({ code }: { code: string }) {
+  const [view, setView] = useState<OutboxView>({ pending: [], sent: [] });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [actingId, setActingId] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      setView(await api<OutboxView>('/v1/notifications/outbox', code));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not load the outbox.');
+    } finally {
+      setLoading(false);
+    }
+  }, [code]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const cancel = async (id: string) => {
+    if (actingId) return;
+    setActingId(id);
+    setError('');
+    try {
+      await api(`/v1/notifications/outbox/${id}/cancel`, code, { method: 'POST' });
+      setView((prev) => ({ ...prev, pending: prev.pending.filter((e) => e.id !== id) }));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Cancel failed.');
+    } finally {
+      setActingId('');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={s.card}>
+        <p style={s.sub}>Loading outbox…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={s.card}>
+      <h1 style={s.h1}>Notifications outbox</h1>
+      <p style={s.sub}>
+        “New spot near you” pushes queue here and go out together at 11am ET as one digest
+        per person — so approving at odd hours never buzzes anyone at 2am. Cancel anything you
+        don’t want sent.
+      </p>
+      {error && <div style={s.errorBox}>{error}</div>}
+
+      <h2 style={{ ...s.h1, fontSize: 16, marginTop: 18 }}>
+        Queued for next 11am ({view.pending.length})
+      </h2>
+      {view.pending.length === 0 ? (
+        <p style={s.sub}>Nothing queued.</p>
+      ) : (
+        view.pending.map((e) => (
+          <div
+            key={e.id}
+            style={{
+              border: `1px solid ${COLORS.line}`,
+              borderRadius: 8,
+              padding: 12,
+              marginTop: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700 }}>{e.venueName}</div>
+              <div style={s.sub}>
+                {e.reach === null
+                  ? '—'
+                  : `Reaches ~${e.reach} ${e.reach === 1 ? 'person' : 'people'} nearby`}
+              </div>
+            </div>
+            <button
+              type="button"
+              style={{ ...tabStyle(false), color: COLORS.danger }}
+              disabled={actingId === e.id}
+              onClick={() => cancel(e.id)}
+            >
+              Cancel
+            </button>
+          </div>
+        ))
+      )}
+
+      <h2 style={{ ...s.h1, fontSize: 16, marginTop: 22 }}>Recently sent</h2>
+      {view.sent.length === 0 ? (
+        <p style={s.sub}>Nothing sent yet.</p>
+      ) : (
+        view.sent.map((e) => (
+          <div
+            key={e.id}
+            style={{
+              borderBottom: `1px solid ${COLORS.line}`,
+              padding: '8px 0',
+              display: 'flex',
+              justifyContent: 'space-between',
+            }}
+          >
+            <span>{e.venueName}</span>
+            <span style={s.sub}>
+              {e.sentAt ? new Date(e.sentAt).toLocaleDateString() : ''}
+            </span>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 // ── Add-venue form ──────────────────────────────────────────────────────────
 function AddVenueForm({ code }: { code: string }) {
   const [countryCode, setCountryCode] = useState('');
@@ -2354,7 +2489,9 @@ export function SubmitPage() {
   const [code, setCode] = useState('');
   const [session, setSession] = useState<Session | null>(null);
   const [mode, setMode] = useState<'event' | 'venue'>('event');
-  const [tab, setTab] = useState<'form' | 'json' | 'review' | 'enrich'>('form');
+  const [tab, setTab] = useState<'form' | 'json' | 'review' | 'enrich' | 'notifications'>(
+    'form',
+  );
 
   // Top-level sections are Submit / Enrich / Review queue — three peer
   // workflows. Enrich (events-only) and the Review queue (both types) are
@@ -2362,8 +2499,14 @@ export function SubmitPage() {
   // branches further: pick Event vs Venue, then Form vs JSON. Those sub-tabs
   // only render under Submit, so the Event/Venue choice never appears to
   // "own" the global queues.
-  const section: 'submit' | 'enrich' | 'review' =
-    tab === 'enrich' ? 'enrich' : tab === 'review' ? 'review' : 'submit';
+  const section: 'submit' | 'enrich' | 'review' | 'notifications' =
+    tab === 'enrich'
+      ? 'enrich'
+      : tab === 'review'
+        ? 'review'
+        : tab === 'notifications'
+          ? 'notifications'
+          : 'submit';
 
   const switchMode = (next: 'event' | 'venue') => {
     setMode(next);
@@ -2420,6 +2563,15 @@ export function SubmitPage() {
               Review queue
             </button>
           )}
+          {session.role === 'admin' && (
+            <button
+              type="button"
+              style={tabStyle(section === 'notifications')}
+              onClick={() => setTab('notifications')}
+            >
+              Notifications
+            </button>
+          )}
         </div>
         {/* Sub-tabs belong to Submit only. */}
         {section === 'submit' && (
@@ -2446,6 +2598,8 @@ export function SubmitPage() {
           <EnrichQueue code={code} />
         ) : tab === 'review' && session.role === 'admin' ? (
           <ReviewQueue code={code} />
+        ) : tab === 'notifications' && session.role === 'admin' ? (
+          <NotificationsOutbox code={code} />
         ) : mode === 'venue' ? (
           tab === 'json' ? <JsonVenueForm code={code} /> : <AddVenueForm code={code} />
         ) : tab === 'json' ? (
