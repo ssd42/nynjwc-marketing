@@ -1,5 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { IOSDevice } from '~/components/IOSDevice';
+import {
+  InstallationContext,
+  type InstallationContextValue,
+} from '@/providers/InstallationProvider';
 import { TabBar } from '@/components/TabBar';
 import { CountryScreen } from '@/screens/CountryScreen';
 import { EventsScreen } from '@/screens/EventsScreen';
@@ -45,6 +49,23 @@ const DISPLAY_H = Math.round(LOGICAL_H * SCALE);
 
 // Display-only preview: nothing here mutates state.
 const noop = () => {};
+
+// SavedScreen is the one rotated screen that reads account state from the
+// app's InstallationContext. The marketing site has no real provider (and no
+// backend handshake), so we satisfy the context with a static signed-out stub
+// — same idea as the fixture data the other screens receive. The Provider's
+// value prop type-checks this shape, so it can't silently drift.
+const INSTALLATION_STUB: InstallationContextValue = {
+  status: 'ready',
+  installationId: 'preview',
+  userId: null,
+  error: null,
+  username: null,
+  isSignedIn: false,
+  claimAccount: () => Promise.resolve(),
+  signIn: () => Promise.resolve(),
+  signOut: () => Promise.resolve(),
+};
 
 function renderScreen(screen: PreviewScreen): ReactNode {
   switch (screen) {
@@ -201,8 +222,10 @@ export function AnimatedPhone() {
               transform: 'translateZ(0)',
             }}
           >
-            {renderScreen(cur.screen)}
-            <TabBar active={cur.screen as ScreenKey} onChange={noop} />
+            <InstallationContext.Provider value={INSTALLATION_STUB}>
+              {renderScreen(cur.screen)}
+              <TabBar active={cur.screen as ScreenKey} onChange={noop} />
+            </InstallationContext.Provider>
           </div>
           </IOSDevice>
         </div>
