@@ -177,6 +177,7 @@ const s = {
     padding: 24,
   } as CSSProperties,
   h1: { fontSize: 22, fontWeight: 600, margin: '0 0 4px' } as CSSProperties,
+  h2: { fontSize: 16, fontWeight: 600, margin: '0 0 4px' } as CSSProperties,
   sub: { fontSize: 13, color: COLORS.muted, margin: '0 0 20px' } as CSSProperties,
   label: { display: 'block', fontSize: 13, fontWeight: 600, margin: '14px 0 4px' } as CSSProperties,
   input: {
@@ -2083,7 +2084,10 @@ function JsonVenueForm({ code }: { code: string }) {
 // first, and lets you edit fields, link a known venue, and add an image — all of
 // which keep the event pending. An admin still approves it in the Review queue.
 function EnrichQueue({ code }: { code: string }) {
-  const [events, setEvents] = useState<PendingEvent[]>([]);
+  // Two buckets: events still awaiting review (any image state), and events
+  // already live in the public feed that are only missing a photo.
+  const [pending, setPending] = useState<PendingEvent[]>([]);
+  const [approved, setApproved] = useState<PendingEvent[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -2091,11 +2095,15 @@ function EnrichQueue({ code }: { code: string }) {
     setLoading(true);
     setError('');
     try {
-      const list = await api<PendingEvent[]>('/v1/events/submissions/pending', code);
+      const [pendingList, approvedList] = await Promise.all([
+        api<PendingEvent[]>('/v1/events/submissions/pending', code),
+        api<PendingEvent[]>('/v1/events/submissions/approved-missing-image', code),
+      ]);
       // Image-missing first; stable sort keeps the server's oldest-first order
       // within each group.
-      list.sort((a, b) => (a.imageUrl ? 1 : 0) - (b.imageUrl ? 1 : 0));
-      setEvents(list);
+      pendingList.sort((a, b) => (a.imageUrl ? 1 : 0) - (b.imageUrl ? 1 : 0));
+      setPending(pendingList);
+      setApproved(approvedList);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load the queue.');
     } finally {
@@ -2107,12 +2115,16 @@ function EnrichQueue({ code }: { code: string }) {
     void load();
   }, [load]);
 
-  const onUpdated = (updated: PendingEvent) => {
-    setEvents((prev) => {
+  const onPendingUpdated = (updated: PendingEvent) => {
+    setPending((prev) => {
       const next = prev.map((e) => (e.id === updated.id ? updated : e));
       next.sort((a, b) => (a.imageUrl ? 1 : 0) - (b.imageUrl ? 1 : 0));
       return next;
     });
+  };
+
+  const onApprovedUpdated = (updated: PendingEvent) => {
+    setApproved((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
   };
 
   if (loading) {
@@ -2126,14 +2138,26 @@ function EnrichQueue({ code }: { code: string }) {
   return (
     <div style={s.card}>
       <h1 style={s.h1}>Enrich</h1>
+
+      <h2 style={s.h2}>Pending review</h2>
       <p style={s.sub}>
-        {events.length === 0
+        {pending.length === 0
           ? 'No pending events to enrich — all caught up.'
-          : `${events.length} pending event${events.length === 1 ? '' : 's'}. Add images, fix details, or link a known venue. Each still needs admin approval in the Review queue.`}
+          : `${pending.length} pending event${pending.length === 1 ? '' : 's'}. Add images, fix details, or link a known venue. Each still needs admin approval in the Review queue.`}
       </p>
       {error && <div style={s.errorBox}>{error}</div>}
-      {events.map((ev) => (
-        <EnrichCard key={ev.id} code={code} event={ev} onUpdated={onUpdated} />
+      {pending.map((ev) => (
+        <EnrichCard key={ev.id} code={code} event={ev} onUpdated={onPendingUpdated} />
+      ))}
+
+      <h2 style={{ ...s.h2, marginTop: 28 }}>Approved · live · no image</h2>
+      <p style={s.sub}>
+        {approved.length === 0
+          ? 'Every live event has a photo — nothing to enrich here.'
+          : `${approved.length} approved event${approved.length === 1 ? '' : 's'} already public but missing a photo. Adding an image goes live immediately; status is unchanged.`}
+      </p>
+      {approved.map((ev) => (
+        <EnrichCard key={ev.id} code={code} event={ev} onUpdated={onApprovedUpdated} />
       ))}
     </div>
   );
