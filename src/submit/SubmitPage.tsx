@@ -139,6 +139,22 @@ function toIso(local: string): string {
   return new Date(local).toISOString();
 }
 
+/**
+ * Whether an event still belongs in the review / enrich queues. Single-match
+ * watch parties drop off once their date has passed — there's no point
+ * approving or enriching something already over. Fan fests run the whole
+ * tournament, so they always stay. Unparseable dates are kept, so bad data
+ * never silently disappears from the queue.
+ */
+function isQueueRelevantEvent(ev: PendingEvent): boolean {
+  if (ev.kind === 'fanfest') return true;
+  const start = new Date(ev.startsAt);
+  if (Number.isNaN(start.getTime())) return true;
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  return start.getTime() >= startOfToday.getTime();
+}
+
 /** Inverse of toIso: an ISO string → a local `datetime-local` input value. */
 function toLocalInput(iso: string): string {
   const d = new Date(iso);
@@ -1280,7 +1296,9 @@ function ReviewQueue({ code }: { code: string }) {
         api<PendingVenue[]>('/v1/venues/submissions/pending', code),
       ]);
       const merged: ReviewItem[] = [
-        ...events.map((e) => ({ itemType: 'event' as const, ...e })),
+        ...events
+          .filter(isQueueRelevantEvent)
+          .map((e) => ({ itemType: 'event' as const, ...e })),
         ...venues.map((v) => ({ itemType: 'venue' as const, ...v })),
       ];
       // Newest first — most recent submissions surface at the top of the queue.
@@ -2095,7 +2113,9 @@ function EnrichQueue({ code }: { code: string }) {
     setLoading(true);
     setError('');
     try {
-      const pendingList = await api<PendingEvent[]>('/v1/events/submissions/pending', code);
+      const pendingList = (
+        await api<PendingEvent[]>('/v1/events/submissions/pending', code)
+      ).filter(isQueueRelevantEvent);
       // Image-missing first; stable sort keeps the server's oldest-first order
       // within each group.
       pendingList.sort((a, b) => (a.imageUrl ? 1 : 0) - (b.imageUrl ? 1 : 0));
@@ -2107,7 +2127,9 @@ function EnrichQueue({ code }: { code: string }) {
     // predates it (404/405) just hide the section rather than break the page.
     try {
       setApproved(
-        await api<PendingEvent[]>('/v1/events/submissions/approved-missing-image', code),
+        (
+          await api<PendingEvent[]>('/v1/events/submissions/approved-missing-image', code)
+        ).filter(isQueueRelevantEvent),
       );
     } catch {
       setApproved([]);
