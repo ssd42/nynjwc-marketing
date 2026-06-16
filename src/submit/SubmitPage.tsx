@@ -2095,17 +2095,22 @@ function EnrichQueue({ code }: { code: string }) {
     setLoading(true);
     setError('');
     try {
-      const [pendingList, approvedList] = await Promise.all([
-        api<PendingEvent[]>('/v1/events/submissions/pending', code),
-        api<PendingEvent[]>('/v1/events/submissions/approved-missing-image', code),
-      ]);
+      const pendingList = await api<PendingEvent[]>('/v1/events/submissions/pending', code);
       // Image-missing first; stable sort keeps the server's oldest-first order
       // within each group.
       pendingList.sort((a, b) => (a.imageUrl ? 1 : 0) - (b.imageUrl ? 1 : 0));
       setPending(pendingList);
-      setApproved(approvedList);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load the queue.');
+    }
+    // The approved-no-image bucket is a newer, independent endpoint; if a backend
+    // predates it (404/405) just hide the section rather than break the page.
+    try {
+      setApproved(
+        await api<PendingEvent[]>('/v1/events/submissions/approved-missing-image', code),
+      );
+    } catch {
+      setApproved([]);
     } finally {
       setLoading(false);
     }
@@ -2147,7 +2152,7 @@ function EnrichQueue({ code }: { code: string }) {
       </p>
       {error && <div style={s.errorBox}>{error}</div>}
       {pending.map((ev) => (
-        <EnrichCard key={ev.id} code={code} event={ev} onUpdated={onPendingUpdated} />
+        <EnrichCard key={ev.id} code={code} event={ev} status="pending" onUpdated={onPendingUpdated} />
       ))}
 
       <h2 style={{ ...s.h2, marginTop: 28 }}>Approved · live · no image</h2>
@@ -2157,19 +2162,38 @@ function EnrichQueue({ code }: { code: string }) {
           : `${approved.length} approved event${approved.length === 1 ? '' : 's'} already public but missing a photo. Adding an image goes live immediately; status is unchanged.`}
       </p>
       {approved.map((ev) => (
-        <EnrichCard key={ev.id} code={code} event={ev} onUpdated={onApprovedUpdated} />
+        <EnrichCard key={ev.id} code={code} event={ev} status="approved" onUpdated={onApprovedUpdated} />
       ))}
     </div>
   );
 }
 
+// Pill marking whether the event is still awaiting review or already live, so
+// the status is readable on the card itself — not just from the section it sits
+// under.
+function statusPillStyle(status: 'pending' | 'approved'): CSSProperties {
+  return {
+    display: 'inline-block',
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: '#fff',
+    background: status === 'approved' ? '#2f6b4f' : '#9a6700',
+    borderRadius: 999,
+    padding: '2px 8px',
+  };
+}
+
 function EnrichCard({
   code,
   event,
+  status,
   onUpdated,
 }: {
   code: string;
   event: PendingEvent;
+  status: 'pending' | 'approved';
   onUpdated: (e: PendingEvent) => void;
 }) {
   const [title, setTitle] = useState(event.title);
@@ -2311,9 +2335,14 @@ function EnrichCard({
 
         {/* Fields */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 11, color: COLORS.muted }}>
-            {event.submittedBy ? `submitted by ${event.submittedBy}` : 'imported'}
-            {!event.imageUrl && ' · needs image'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={statusPillStyle(status)}>
+              {status === 'approved' ? 'Approved · live' : 'Pending review'}
+            </span>
+            <span style={{ fontSize: 11, color: COLORS.muted }}>
+              {event.submittedBy ? `submitted by ${event.submittedBy}` : 'imported'}
+              {!event.imageUrl && ' · needs image'}
+            </span>
           </div>
 
           <input
@@ -2500,7 +2529,13 @@ function EnrichCard({
             disabled={saving || uploading}
             onClick={() => void save()}
           >
-            {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save (stays pending)'}
+            {saving
+              ? 'Saving…'
+              : saved
+                ? 'Saved ✓'
+                : status === 'approved'
+                  ? 'Save (stays live)'
+                  : 'Save (stays pending)'}
           </button>
         </div>
       </div>
