@@ -1283,8 +1283,8 @@ function ReviewQueue({ code }: { code: string }) {
         ...events.map((e) => ({ itemType: 'event' as const, ...e })),
         ...venues.map((v) => ({ itemType: 'venue' as const, ...v })),
       ];
-      // Oldest first, matching the order each queue used on its own.
-      merged.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      // Newest first — most recent submissions surface at the top of the queue.
+      merged.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       setItems(merged);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load the queue.');
